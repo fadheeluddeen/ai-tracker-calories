@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Plate Log</title>
+
+  <meta name="theme-color" content="#05060A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Plate Log" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <span class="orb orb--violet"></span>
+    <span class="orb orb--lime"></span>
+    <span class="orb orb--cyan"></span>
+  </div>
+
+  <main id="app">
+
+    <!-- ───────────── HOME ───────────── -->
+    <section id="view-home" class="view" data-view="home">
+      <header class="home-header">
+        <div>
+          <p class="eyebrow" id="home-date">Today</p>
+          <h1>Plate Log</h1>
+        </div>
+      </header>
+
+      <div class="glass card-totals">
+        <div class="totals-headline">
+          <span class="totals-number" id="total-calories">0</span>
+          <span class="totals-unit">kcal today</span>
+        </div>
+        <div class="macro-row">
+          <div class="macro">
+            <span class="macro-dot macro-dot--protein"></span>
+            <span class="macro-label">Protein</span>
+            <span class="macro-value" id="total-protein">0g</span>
+          </div>
+          <div class="macro">
+            <span class="macro-dot macro-dot--carbs"></span>
+            <span class="macro-label">Carbs</span>
+            <span class="macro-value" id="total-carbs">0g</span>
+          </div>
+          <div class="macro">
+            <span class="macro-dot macro-dot--fat"></span>
+            <span class="macro-label">Fat</span>
+            <span class="macro-value" id="total-fat">0g</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Logged today</div>
+      <ul class="meal-list" id="meal-list">
+        <li class="empty-state" id="empty-state">No meals logged yet — tap the camera to add one.</li>
+      </ul>
+    </section>
+
+    <!-- ───────────── CAMERA ───────────── -->
+    <section id="view-camera" class="view" data-view="camera" hidden>
+      <header class="sub-header">
+        <button class="icon-button" id="camera-back" aria-label="Back">←</button>
+        <h2>Log a meal</h2>
+      </header>
+
+      <div class="glass camera-card">
+        <div class="camera-preview" id="camera-preview">
+          <span class="camera-placeholder">No photo yet</span>
+        </div>
+
+        <label class="btn btn--primary" for="camera-input">Take / choose photo</label>
+        <input type="file" id="camera-input" accept="image/*" capture="environment" hidden />
+
+        <button class="btn btn--secondary" id="camera-submit" disabled>Analyze &amp; log</button>
+      </div>
+
+      <div class="loading-overlay" id="loading-overlay" hidden>
+        <div class="spinner"></div>
+        <p>Analyzing your plate…</p>
+      </div>
+    </section>
+
+    <!-- ───────────── RESULT ───────────── -->
+    <section id="view-result" class="view" data-view="result" hidden>
+      <header class="sub-header">
+        <button class="icon-button" id="result-close" aria-label="Close">✕</button>
+        <h2>Logged</h2>
+      </header>
+
+      <div class="glass result-card">
+        <img id="result-photo" class="result-photo" alt="Logged meal" />
+        <h3 id="result-name">—</h3>
+        <div class="badge-row">
+          <span class="badge" id="result-confidence">—</span>
+          <span class="badge badge--muted" id="result-provider">—</span>
+        </div>
+        <div class="totals-headline totals-headline--result">
+          <span class="totals-number" id="result-calories">0</span>
+          <span class="totals-unit">kcal</span>
+        </div>
+        <div class="macro-row">
+          <div class="macro">
+            <span class="macro-dot macro-dot--protein"></span>
+            <span class="macro-label">Protein</span>
+            <span class="macro-value" id="result-protein">0g</span>
+          </div>
+          <div class="macro">
+            <span class="macro-dot macro-dot--carbs"></span>
+            <span class="macro-label">Carbs</span>
+            <span class="macro-value" id="result-carbs">0g</span>
+          </div>
+          <div class="macro">
+            <span class="macro-dot macro-dot--fat"></span>
+            <span class="macro-label">Fat</span>
+            <span class="macro-value" id="result-fat">0g</span>
+          </div>
+        </div>
+        <p class="result-failed-note" id="result-failed-note" hidden>
+          Couldn't identify this one automatically — it's still saved with your photo.
+        </p>
+      </div>
+
+      <button class="btn btn--primary" id="result-done">Done</button>
+    </section>
+
+  </main>
+
+  <nav class="tab-bar glass" aria-label="Primary">
+    <button class="tab-item is-active" data-nav="home">
+      <span class="tab-icon">⌂</span>
+      <span class="tab-label">Today</span>
+    </button>
+    <button class="fab" id="open-camera" aria-label="Log a meal">+</button>
+    <span class="tab-spacer" aria-hidden="true"></span>
+  </nav>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "plate-log",
+  "version": "1.0.0",
+  "description": "Photo-based calorie tracker: snap a plate, get calories/macros via Gemini with Groq fallback.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "migrate": "node server/migrate.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:restart": "pm2 restart plate-log",
+    "pm2:logs": "pm2 logs plate-log"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "googleapis": "^178.1.1",
+    "multer": "^2.4.0",
+    "pg": "^8.13.1",
+    "sharp": "^0.35.4"
+  }
+}
