@@ -3,6 +3,8 @@ const path = require('path');
 const express = require('express');
 const mealsRouter = require('./routes/meals');
 const pantryRouter = require('./routes/pantry');
+const chefRouter = require('./routes/chef');
+const supplementsRouter = require('./routes/supplements');
 const settingsRouter = require('./routes/settings');
 const { ensureSeeded } = require('./services/settings');
 
@@ -15,6 +17,8 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.use('/api/meals', mealsRouter);
 app.use('/api/pantry', pantryRouter);
+app.use('/api/chef', chefRouter);
+app.use('/api/supplements', supplementsRouter);
 app.use('/api/settings', settingsRouter);
 
 // Never let one bad request crash the whole server.
