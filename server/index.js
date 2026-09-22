@@ -13,6 +13,8 @@ const { startSupplementReminderJob } = require('./jobs/supplementReminders');
 const app = express();
 const PORT = process.env.PORT || 3020;
 
+const CLIENT_DIST = path.join(__dirname, '..', 'reference-ui', 'dist');
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
@@ -23,6 +25,16 @@ app.use('/api/chef', chefRouter);
 app.use('/api/supplements', supplementsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/settings', settingsRouter);
+
+// Real frontend (built via `npm run build:client`). Single-page app, so any
+// non-API, non-static route falls through to index.html.
+app.use(express.static(CLIENT_DIST));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(CLIENT_DIST, 'index.html'), (err) => {
+    if (err) next(err);
+  });
+});
 
 // Never let one bad request crash the whole server.
 app.use((err, req, res, next) => {

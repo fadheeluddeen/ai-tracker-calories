@@ -17,6 +17,12 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Local dev only: proxy API/upload calls to the real Express server.
+      // Production doesn't use this — the built dist/ is served by Express directly.
+      proxy: {
+        '/api': 'http://localhost:3020',
+        '/uploads': 'http://localhost:3020',
+      },
     },
   };
 });

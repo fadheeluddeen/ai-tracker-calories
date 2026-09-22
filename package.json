@@ -5,6 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
+    "build:client": "npm install --prefix reference-ui && npm run build --prefix reference-ui",
     "migrate": "node server/migrate.js",
     "drive:auth": "node server/scripts/driveAuthSetup.js",
     "backup:drive": "node server/scripts/driveBackup.js",

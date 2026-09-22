@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { UserGoals } from '../types';
-import { Sliders, Check, Target, Droplets, Flame, RotateCcw, Smartphone, Activity, Code, Sparkles, Download, Eye } from 'lucide-react';
-import { DEFAULT_GOALS } from '../data/mockFoods';
-import { 
-  hapticLight, hapticMedium, hapticSelection, 
-  hapticSuccess, hapticWarning, isHapticsSupported 
+import { Sliders, Check, Target, Lock, Unlock, KeyRound, AlertTriangle, Eye, Download } from 'lucide-react';
+import { DEFAULT_GOALS } from '../constants';
+import { getSettings, setGeminiKey, SettingsInfo } from '../api';
+import {
+  hapticLight, hapticMedium, hapticSelection,
+  hapticSuccess, hapticWarning, isHapticsSupported
 } from '../utils/haptics';
 import { LiquidGlassEmblem } from './LiquidGlassEmblem';
 import { LiquidGlassSvgModal } from './LiquidGlassSvgModal';
@@ -20,6 +21,44 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ goals, onSaveGoals }) 
   const [lastHapticFired, setLastHapticFired] = useState<string | null>(null);
   const [showSvgModal, setShowSvgModal] = useState(false);
   const hapticsActive = isHapticsSupported();
+
+  // Gemini settings (PIN gated) — folded in from the old standalone settings.html page
+  const [pin, setPin] = useState('');
+  const [pinUnlocked, setPinUnlocked] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [settingsInfo, setSettingsInfo] = useState<SettingsInfo | null>(null);
+  const [newKey, setNewKey] = useState('');
+  const [keySaveResult, setKeySaveResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const handleUnlockSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError(null);
+    try {
+      const info = await getSettings(pin);
+      setSettingsInfo(info);
+      setPinUnlocked(true);
+      hapticSuccess();
+    } catch (err: any) {
+      hapticWarning();
+      setPinError(err.message || 'Failed to unlock settings');
+    }
+  };
+
+  const handleSaveGeminiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKey.trim()) return;
+    setKeySaveResult(null);
+    try {
+      const info = await setGeminiKey(pin, newKey.trim());
+      setSettingsInfo(info);
+      setNewKey('');
+      setKeySaveResult({ ok: true, message: 'Saved — no restart needed.' });
+      hapticSuccess();
+    } catch (err: any) {
+      hapticWarning();
+      setKeySaveResult({ ok: false, message: err.message || 'Failed to save key' });
+    }
+  };
 
   const handlePresetSelect = (type: 'cut' | 'maintain' | 'bulk') => {
     hapticSelection();
@@ -227,6 +266,95 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ goals, onSaveGoals }) 
           )}
         </button>
       </form>
+
+      {/* Gemini API Key & Server Health (PIN gated) */}
+      <div className="liquid-glass liquid-sheen rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden space-y-4">
+        <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none z-10" />
+
+        <div className="flex items-center justify-between relative z-10">
+          <div>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-neutral-500">
+              Server Settings
+            </span>
+            <h3 className="text-base font-bold text-neutral-900 tracking-tight">Gemini API Key</h3>
+          </div>
+          <div className="w-9 h-9 rounded-2xl liquid-glass-subtle flex items-center justify-center text-neutral-800 border border-white/60">
+            {pinUnlocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+          </div>
+        </div>
+
+        {!pinUnlocked ? (
+          <form onSubmit={handleUnlockSettings} className="space-y-2.5 relative z-10">
+            <label className="text-[11px] font-bold text-neutral-700 block">PIN</label>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl liquid-glass text-sm text-neutral-900 border border-white/60 focus:outline-none focus:ring-1 focus:ring-neutral-800"
+            />
+            {pinError && (
+              <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-2.5 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{pinError}</span>
+              </div>
+            )}
+            <button
+              type="submit"
+              className="w-full py-2.5 rounded-xl liquid-droplet-dark text-white font-bold text-xs flex items-center justify-center gap-1.5"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Unlock</span>
+            </button>
+          </form>
+        ) : (
+          <div className="space-y-3 relative z-10">
+            <div>
+              <span className="text-[11px] font-bold text-neutral-700 block mb-1">Current key</span>
+              <div className="font-mono text-sm text-neutral-900">
+                {settingsInfo?.gemini_key_masked || '(not set)'}
+              </div>
+            </div>
+
+            {settingsInfo?.last_error && (
+              <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5">
+                [{settingsInfo.last_error.type}] {settingsInfo.last_error.message} —{' '}
+                {new Date(settingsInfo.last_error.at).toLocaleString()}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveGeminiKey} className="space-y-2">
+              <label className="text-[11px] font-bold text-neutral-700 block">Paste new key</label>
+              <input
+                type="text"
+                autoComplete="off"
+                value={newKey}
+                onChange={(e) => setNewKey(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl liquid-glass text-sm text-neutral-900 border border-white/60 focus:outline-none focus:ring-1 focus:ring-neutral-800"
+              />
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl liquid-droplet-dark text-white font-bold text-xs flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Save Key</span>
+              </button>
+              {keySaveResult && (
+                <div
+                  className={`text-xs rounded-xl p-2.5 border ${
+                    keySaveResult.ok
+                      ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                      : 'text-red-700 bg-red-50 border-red-200'
+                  }`}
+                >
+                  {keySaveResult.message}
+                </div>
+              )}
+            </form>
+          </div>
+        )}
+      </div>
 
       {/* iOS Physical Haptics Simulation & Diagnostics Card */}
       <div className="liquid-glass liquid-sheen rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden space-y-4">

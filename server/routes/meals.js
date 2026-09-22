@@ -103,6 +103,49 @@ router.get('/today', async (req, res) => {
   }
 });
 
+// Per-day totals for the trailing `days` days (default 14, including today),
+// oldest first. Missing days (nothing logged) come back as zeroed totals so
+// the frontend doesn't have to special-case gaps.
+router.get('/history', async (req, res) => {
+  const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 14));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - (days - 1));
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         to_char(created_at, 'YYYY-MM-DD') AS date,
+         COALESCE(SUM(calories), 0)::int AS calories,
+         COALESCE(SUM(protein_g), 0)::int AS protein_g,
+         COALESCE(SUM(carbs_g), 0)::int AS carbs_g,
+         COALESCE(SUM(fat_g), 0)::int AS fat_g
+       FROM meals
+       WHERE created_at >= $1 AND analysis_failed = false
+       GROUP BY to_char(created_at, 'YYYY-MM-DD')`,
+      [start]
+    );
+    const byDate = new Map(rows.map((r) => [r.date, r]));
+
+    const history = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      const date = d.toISOString().slice(0, 10);
+      history.push(
+        byDate.get(date) || { date, calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+      );
+    }
+
+    res.json({ history });
+  } catch (err) {
+    console.error('[meals] fetch history failed:', err.message);
+    res.status(500).json({ error: 'failed to fetch meal history' });
+  }
+});
+
 router.get('/', async (req, res) => {
   const { date } = req.query;
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {

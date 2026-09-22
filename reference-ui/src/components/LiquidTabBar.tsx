@@ -1,28 +1,28 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Calendar, Plus, BarChart3, Settings2, Package, Sparkles } from 'lucide-react';
+import { Calendar, Camera, BarChart3, Settings2, Package, Sparkles, Pill } from 'lucide-react';
 import { ActiveTab } from '../types';
 import { hapticMedium, hapticSelection } from '../utils/haptics';
 
 interface LiquidTabBarProps {
   activeTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
-  onOpenQuickLog: () => void;
+  onOpenCamera: () => void;
 }
 
 export const LiquidTabBar: React.FC<LiquidTabBarProps> = ({
   activeTab,
   onSelectTab,
-  onOpenQuickLog,
+  onOpenCamera,
 }) => {
   const handleTabClick = (tab: ActiveTab) => {
     hapticSelection();
     onSelectTab(tab);
   };
 
-  const handleQuickLog = () => {
+  const handleCameraClick = () => {
     hapticMedium();
-    onOpenQuickLog();
+    onOpenCamera();
   };
 
   return (
@@ -61,23 +61,38 @@ export const LiquidTabBar: React.FC<LiquidTabBarProps> = ({
           <span className="text-[9px] sm:text-[10px] tracking-tight whitespace-nowrap">Pantry</span>
         </button>
 
-        {/* Quick Log Button (Floating Glass Center Action) */}
+        {/* Supplements Tab */}
         <button
           type="button"
-          onClick={handleQuickLog}
-          className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl liquid-droplet-dark text-white hover:brightness-110 active:scale-95 flex items-center justify-center transition-all shadow-lg mx-0.5 relative z-10 border border-white/30 shrink-0"
-          title="Quick Log Food"
-          aria-label="Quick Log Food"
+          onClick={() => handleTabClick('supplements')}
+          className={`flex-1 py-1.5 px-0.5 rounded-2xl flex flex-col items-center gap-0.5 transition-all relative z-10 ${
+            activeTab === 'supplements'
+              ? 'liquid-droplet-dark text-white font-bold shadow-md'
+              : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
+          }`}
+          aria-label="Supplements tab"
         >
-          <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+          <Pill className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="text-[9px] sm:text-[10px] tracking-tight whitespace-nowrap">Supps</span>
+        </button>
+
+        {/* Camera Button (Floating Glass Center Action) — the only meal-logging entry point */}
+        <button
+          type="button"
+          onClick={handleCameraClick}
+          className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl liquid-droplet-dark text-white hover:brightness-110 active:scale-95 flex items-center justify-center transition-all shadow-lg mx-0.5 relative z-10 border border-white/30 shrink-0"
+          title="Snap a plate"
+          aria-label="Snap a plate"
+        >
+          <Camera className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
         </button>
 
         {/* Gemini AI Chef Tab */}
         <button
           type="button"
-          onClick={() => handleTabClick('chat')}
+          onClick={() => handleTabClick('chef')}
           className={`flex-1 py-1.5 px-0.5 rounded-2xl flex flex-col items-center gap-0.5 transition-all relative z-10 ${
-            activeTab === 'chat'
+            activeTab === 'chef'
               ? 'liquid-droplet-dark text-white font-bold shadow-md'
               : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
           }`}
