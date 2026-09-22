@@ -1,0 +1,8 @@
+{
+  "name": "iOS Calorie Tracker",
+  "description": "An iOS food and calorie tracker web app featuring a heavy liquid glass aesthetic, persistent ingredient photo vault, Gemini AI chef assistant, macro rings, and meal logs.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
