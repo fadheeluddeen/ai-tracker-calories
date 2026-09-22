@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plate Log — Settings</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; background: #fff; color: #111; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.hint { color: #666; font-size: 13px; margin: 0 0 20px; }
+  label { display: block; margin-top: 16px; font-size: 13px; font-weight: 600; color: #444; }
+  input { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ccc; font-size: 15px; box-sizing: border-box; }
+  button { margin-top: 16px; padding: 10px 16px; font-weight: 700; border: 1px solid #111; background: #111; color: #fff; cursor: pointer; }
+  .row { margin-top: 20px; padding-top: 16px; border-top: 1px solid #ddd; }
+  .error-box { margin-top: 12px; padding: 10px; border: 1px solid #c00; background: #fee; font-size: 13px; }
+  .ok-box { margin-top: 12px; padding: 10px; border: 1px solid #2a2; background: #efe; font-size: 13px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <h1>Settings</h1>
+  <p class="hint">PIN-protected. Everything else in the app stays open.</p>
+
+  <div id="pin-gate">
+    <label for="pin">PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" />
+    <button id="unlock-btn">Unlock</button>
+    <div id="pin-error" class="error-box hidden"></div>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="row">
+      <label>Current Gemini key</label>
+      <div id="masked-key" style="font-family: monospace; font-size: 15px; margin-top: 4px;">—</div>
+    </div>
+
+    <div id="error-panel" class="row hidden">
+      <label>Last Gemini error</label>
+      <div id="error-detail" class="error-box"></div>
+    </div>
+
+    <div class="row">
+      <label for="new-key">Paste new Gemini key</label>
+      <input id="new-key" type="text" autocomplete="off" />
+      <button id="save-btn">Save key</button>
+      <div id="save-result" class="hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    let pin = '';
+
+    async function loadSettings() {
+      const res = await fetch('/api/settings', { headers: { 'X-Settings-Pin': pin } });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function render(data) {
+      document.getElementById('masked-key').textContent = data.gemini_key_masked || '(not set)';
+      const errorPanel = document.getElementById('error-panel');
+      const errorDetail = document.getElementById('error-detail');
+      if (data.last_error) {
+        errorPanel.classList.remove('hidden');
+        errorDetail.textContent =
+          `[${data.last_error.type}] ${data.last_error.message} — ${new Date(data.last_error.at).toLocaleString()}`;
+      } else {
+        errorPanel.classList.add('hidden');
+      }
+    }
+
+    document.getElementById('unlock-btn').addEventListener('click', async () => {
+      pin = document.getElementById('pin').value;
+      const errBox = document.getElementById('pin-error');
+      errBox.classList.add('hidden');
+      try {
+        const data = await loadSettings();
+        render(data);
+        document.getElementById('pin-gate').classList.add('hidden');
+        document.getElementById('panel').classList.remove('hidden');
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      const key = document.getElementById('new-key').value.trim();
+      const resultBox = document.getElementById('save-result');
+      resultBox.className = 'hidden';
+      if (!key) return;
+      try {
+        const res = await fetch('/api/settings/gemini-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Settings-Pin': pin },
+          body: JSON.stringify({ key }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+        const data = await res.json();
+        render(data);
+        document.getElementById('new-key').value = '';
+        resultBox.textContent = 'Saved — no restart needed.';
+        resultBox.className = 'ok-box';
+      } catch (err) {
+        resultBox.textContent = err.message;
+        resultBox.className = 'error-box';
+      }
+    });
+  </script>
+</body>
+</html>

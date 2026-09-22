@@ -1,15 +1,15 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { PROMPT, parseFoodJson } = require('./parseFoodJson');
+const { PROMPT, parsePantryJson } = require('./parsePantryJson');
 const { getGeminiKey } = require('./settings');
 
 /**
- * Analyzes a food photo with Gemini. Throws on any failure (network,
- * rate limit, bad JSON) — the caller (analyze.js) owns the retry policy.
- * Key is read live from the settings table (editable from the Settings
- * screen, no restart needed) — .env's GEMINI_API_KEY is only the
- * first-boot default.
+ * Identifies a single pantry ingredient (not a full meal) with Gemini.
+ * Throws on any failure (network, rate limit, bad JSON) — the caller
+ * (analyzePantry.js) owns the retry policy. Same model/client setup as
+ * gemini.js, different prompt/parser. Key is read live from the settings
+ * table, same as gemini.js.
  */
-async function analyzeWithGemini(buffer) {
+async function analyzeIngredientWithGemini(buffer) {
   const apiKey = await getGeminiKey();
   if (!apiKey) throw new Error('no Gemini API key configured');
 
@@ -25,7 +25,7 @@ async function analyzeWithGemini(buffer) {
   ]);
 
   const text = result.response.text();
-  return parseFoodJson(text);
+  return parsePantryJson(text);
 }
 
-module.exports = { analyzeWithGemini };
+module.exports = { analyzeIngredientWithGemini };
