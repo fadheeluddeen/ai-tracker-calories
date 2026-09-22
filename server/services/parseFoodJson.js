@@ -20,7 +20,7 @@ guess with "confidence": "low" rather than refusing.`;
  * Strips markdown code fences some models add despite instructions,
  * parses the JSON, and validates/coerces it into the canonical shape.
  * Throws on anything that doesn't look like a usable result, so the
- * caller (gemini.js / groq.js) treats it as a provider failure.
+ * caller (gemini.js) treats it as a provider failure.
  */
 function parseFoodJson(rawText) {
   if (!rawText) throw new Error('empty response');

@@ -1,12 +1,11 @@
 const { analyzeWithGemini } = require('./gemini');
-const { analyzeWithGroq } = require('./groq');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Gemini (with one retry) -> Groq fallback -> analysis_failed placeholder.
+ * Gemini (with one retry) -> analysis_failed placeholder.
  * Never throws: always resolves to a row-shaped result so the caller can
- * save the meal (photo included) even when both providers are down.
+ * save the meal (photo included) even when Gemini is down.
  */
 async function analyzeFood(buffer) {
   try {
@@ -22,14 +21,7 @@ async function analyzeFood(buffer) {
     const result = await analyzeWithGemini(buffer);
     return { ...result, provider: 'gemini', analysis_failed: false };
   } catch (err) {
-    console.error('[analyze] gemini retry failed, falling back to groq:', err.message);
-  }
-
-  try {
-    const result = await analyzeWithGroq(buffer);
-    return { ...result, provider: 'groq', analysis_failed: false };
-  } catch (err) {
-    console.error('[analyze] groq fallback also failed:', err.message);
+    console.error('[analyze] gemini retry failed:', err.message);
   }
 
   return {
