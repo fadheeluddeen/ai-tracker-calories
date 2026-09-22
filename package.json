@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server/index.js",
     "migrate": "node server/migrate.js",
+    "drive:auth": "node server/scripts/driveAuthSetup.js",
+    "backup:drive": "node server/scripts/driveBackup.js",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:restart": "pm2 restart plate-log",
     "pm2:logs": "pm2 logs plate-log"

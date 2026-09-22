@@ -1,0 +1,1 @@
+ALTER TABLE meals ADD COLUMN IF NOT EXISTS backed_up boolean NOT NULL DEFAULT false;
