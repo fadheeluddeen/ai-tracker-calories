@@ -100,6 +100,9 @@ export default function App() {
   // weigh-in. Falls back to DEFAULT_GOALS until a profile/weight exist yet.
   const [goals, setGoals] = useState<UserGoals>(DEFAULT_GOALS);
 
+  // Custom background photo (Profile > Appearance). Null = default gradient/orbs.
+  const [backgroundImagePath, setBackgroundImagePath] = useState<string | null>(null);
+
   const loadProfileGoals = useCallback(async () => {
     try {
       const data = await getProfile();
@@ -113,6 +116,7 @@ export default function App() {
       } else {
         setGoals(DEFAULT_GOALS);
       }
+      setBackgroundImagePath(data.profile?.background_image_path ?? null);
     } catch (err) {
       console.error('Failed to load profile goals:', err);
     }
@@ -195,9 +199,23 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-dvh w-full max-w-md mx-auto relative flex flex-col overflow-hidden ${getThemeBackgroundClass(theme)} text-neutral-900 transition-colors duration-500`}
+      className={`min-h-dvh w-full max-w-md mx-auto relative flex flex-col overflow-hidden ${
+        backgroundImagePath ? 'bg-neutral-800' : getThemeBackgroundClass(theme)
+      } text-neutral-900 transition-colors duration-500`}
     >
-      <ThemeOrbs theme={theme} />
+      {backgroundImagePath ? (
+        <>
+          {/* Custom user photo backdrop — dark overlay keeps glass-panel text
+              readable regardless of how bright/busy the photo is. */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(/${backgroundImagePath})` }}
+          />
+          <div className="absolute inset-0 bg-black/20" />
+        </>
+      ) : (
+        <ThemeOrbs theme={theme} />
+      )}
 
       <div
         className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col px-4"

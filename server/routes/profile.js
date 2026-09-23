@@ -1,7 +1,26 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
-const { getProfile, upsertProfile, getLatestWeight, calculateGoals } = require('../services/profile');
+const { upload } = require('../middleware/upload');
+const { compressBackgroundImage } = require('../services/compress');
+const { saveToDisk } = require('../services/storage');
+const {
+  getProfile,
+  upsertProfile,
+  setBackgroundImage,
+  getLatestWeight,
+  calculateGoals,
+} = require('../services/profile');
 
 const router = express.Router();
+
+function deleteOldPhoto(relativePath) {
+  if (!relativePath) return;
+  const fullPath = path.join(__dirname, '..', '..', relativePath);
+  fs.unlink(fullPath, (err) => {
+    if (err) console.error('[profile] old background cleanup failed:', err.message);
+  });
+}
 
 const VALID_SEX = ['male', 'female'];
 const VALID_ACTIVITY = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
@@ -46,6 +65,61 @@ router.put('/', async (req, res) => {
   } catch (err) {
     console.error('[profile] update failed:', err.message);
     res.status(500).json({ error: 'failed to update profile' });
+  }
+});
+
+// Custom app background — a user photo behind the glass panels instead of
+// the default gradient/orbs. Requires a profile row to already exist.
+router.post('/background', upload.single('photo'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'multipart field "photo" is required' });
+  }
+
+  const existing = await getProfile();
+  if (!existing) {
+    return res.status(400).json({ error: 'Set up your profile before choosing a background image.' });
+  }
+
+  let compressed;
+  try {
+    compressed = await compressBackgroundImage(req.file.buffer);
+  } catch (err) {
+    console.error('[profile] background compression failed:', err.message);
+    return res.status(500).json({ error: 'failed to process photo' });
+  }
+
+  const filename = `bg-${Date.now()}-${Math.round(Math.random() * 1e6)}.jpg`;
+  let photoDiskPath;
+  try {
+    photoDiskPath = await saveToDisk(compressed, filename);
+  } catch (err) {
+    console.error('[profile] background save failed:', err.message);
+    return res.status(500).json({ error: 'failed to save photo' });
+  }
+
+  try {
+    const profile = await setBackgroundImage(photoDiskPath);
+    deleteOldPhoto(existing.background_image_path);
+    res.status(201).json(profile);
+  } catch (err) {
+    console.error('[profile] background update failed:', err.message);
+    res.status(500).json({ error: 'failed to save background' });
+  }
+});
+
+router.delete('/background', async (req, res) => {
+  const existing = await getProfile();
+  if (!existing) {
+    return res.status(400).json({ error: 'no profile exists yet' });
+  }
+
+  try {
+    const profile = await setBackgroundImage(null);
+    deleteOldPhoto(existing.background_image_path);
+    res.json(profile);
+  } catch (err) {
+    console.error('[profile] background reset failed:', err.message);
+    res.status(500).json({ error: 'failed to reset background' });
   }
 });
 

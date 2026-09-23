@@ -43,6 +43,19 @@ async function upsertProfile({ sex, age, height_cm, activity_level, goal }) {
   return rows[0];
 }
 
+// Returns null if no profile row exists yet — callers must have the user
+// set up their profile before a background image can be attached to it.
+async function setBackgroundImage(imagePath) {
+  const existing = await getProfile();
+  if (!existing) return null;
+
+  const { rows } = await pool.query(
+    'UPDATE profile SET background_image_path = $1, updated_at = now() WHERE id = $2 RETURNING *',
+    [imagePath, existing.id]
+  );
+  return rows[0];
+}
+
 async function getLatestWeight() {
   const { rows } = await pool.query('SELECT * FROM weight_logs ORDER BY logged_at DESC LIMIT 1');
   return rows[0] || null;
@@ -90,6 +103,7 @@ module.exports = {
   GOAL_ADJUSTMENTS,
   getProfile,
   upsertProfile,
+  setBackgroundImage,
   getLatestWeight,
   logWeight,
   calculateGoals,

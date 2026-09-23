@@ -223,6 +223,7 @@ export interface Profile {
   height_cm: number;
   activity_level: ActivityLevel;
   goal: WeightGoal;
+  background_image_path: string | null;
   updated_at: string;
 }
 
@@ -273,6 +274,20 @@ export function updateProfile(input: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
+    .then((r) => handle<any>(r))
+    .then((p) => ({ ...p, height_cm: Number(p.height_cm) }));
+}
+
+export function uploadBackgroundImage(imageDataUrl: string): Promise<Profile> {
+  const form = new FormData();
+  form.append('photo', dataUrlToBlob(imageDataUrl), 'background.jpg');
+  return fetch('/api/profile/background', { method: 'POST', body: form })
+    .then((r) => handle<any>(r))
+    .then((p) => ({ ...p, height_cm: Number(p.height_cm) }));
+}
+
+export function resetBackgroundImage(): Promise<Profile> {
+  return fetch('/api/profile/background', { method: 'DELETE' })
     .then((r) => handle<any>(r))
     .then((p) => ({ ...p, height_cm: Number(p.height_cm) }));
 }

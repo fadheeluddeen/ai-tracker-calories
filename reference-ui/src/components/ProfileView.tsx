@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Check, Target, Scale, Activity, Lock, Unlock, KeyRound, AlertTriangle, Bell } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check, Target, Scale, Activity, Lock, Unlock, KeyRound, AlertTriangle, Bell, Image, RotateCcw } from 'lucide-react';
 import {
   getSettings,
   setGeminiKey,
@@ -7,6 +7,8 @@ import {
   getProfile,
   updateProfile,
   logWeight,
+  uploadBackgroundImage,
+  resetBackgroundImage,
   getPushPublicKey,
   subscribePush,
   sendTestPush,
@@ -16,7 +18,7 @@ import {
   ActivityLevel,
   WeightGoal,
 } from '../api';
-import { hapticSuccess, hapticWarning } from '../utils/haptics';
+import { hapticLight, hapticSuccess, hapticWarning } from '../utils/haptics';
 
 // Converts the VAPID public key (base64url, from the server) into the raw
 // byte array the PushManager subscribe() call requires.
@@ -68,6 +70,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
   const [savingWeight, setSavingWeight] = useState(false);
   const [weightSaved, setWeightSaved] = useState(false);
   const [weightError, setWeightError] = useState<string | null>(null);
+
+  // Custom background photo
+  const [backgroundPath, setBackgroundPath] = useState<string | null>(null);
+  const [backgroundBusy, setBackgroundBusy] = useState(false);
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
 
   // Gemini settings (PIN gated) — folded in from the old standalone settings.html page
   const [pin, setPin] = useState('');
@@ -162,11 +170,60 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
         setHeightCm(String(data.profile.height_cm));
         setActivityLevel(data.profile.activity_level);
         setGoal(data.profile.goal);
+        setBackgroundPath(data.profile.background_image_path);
       }
     } catch (err) {
       console.error('Failed to load profile:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBackgroundFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setBackgroundError(null);
+    setBackgroundBusy(true);
+    hapticLight();
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      try {
+        const profile = await uploadBackgroundImage(dataUrl);
+        setBackgroundPath(profile.background_image_path);
+        hapticSuccess();
+        onProfileSaved();
+      } catch (err: any) {
+        hapticWarning();
+        setBackgroundError(err.message || 'Failed to save background image');
+      } finally {
+        setBackgroundBusy(false);
+      }
+    };
+    reader.onerror = () => {
+      setBackgroundBusy(false);
+      setBackgroundError('Failed to read the selected photo');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetBackground = async () => {
+    setBackgroundError(null);
+    setBackgroundBusy(true);
+    hapticLight();
+    try {
+      const profile = await resetBackgroundImage();
+      setBackgroundPath(profile.background_image_path);
+      hapticSuccess();
+      onProfileSaved();
+    } catch (err: any) {
+      hapticWarning();
+      setBackgroundError(err.message || 'Failed to reset background');
+    } finally {
+      setBackgroundBusy(false);
     }
   };
 
@@ -523,6 +580,68 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
         {pushStatus && (
           <div className="text-xs text-neutral-700 bg-white/50 border border-white/60 rounded-xl p-2.5 relative z-10">
             {pushStatus}
+          </div>
+        )}
+      </div>
+
+      {/* Custom background photo */}
+      <div className="liquid-glass liquid-sheen rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden space-y-3">
+        <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none z-10" />
+
+        <div className="flex items-center justify-between relative z-10">
+          <div>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-neutral-500">Appearance</span>
+            <h3 className="text-base font-bold text-neutral-900 tracking-tight">Background</h3>
+          </div>
+          <div className="w-9 h-9 rounded-2xl liquid-glass-subtle flex items-center justify-center text-neutral-800 border border-white/60">
+            <Image className="w-4 h-4" />
+          </div>
+        </div>
+
+        {backgroundPath && (
+          <div className="rounded-2xl overflow-hidden border border-white/60 aspect-video w-full relative z-10">
+            <img src={`/${backgroundPath}`} alt="Current background" className="w-full h-full object-cover" />
+          </div>
+        )}
+
+        <p className="text-xs text-neutral-600 relative z-10">
+          {backgroundPath
+            ? 'Your own photo shows behind the glass panels, with a dark overlay for readability.'
+            : 'Using the default gradient backdrop. Pick a photo to use instead.'}
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 relative z-10">
+          <button
+            type="button"
+            onClick={() => backgroundInputRef.current?.click()}
+            disabled={backgroundBusy}
+            className="py-2.5 rounded-xl liquid-droplet-dark text-white font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            <Image className="w-3.5 h-3.5" />
+            <span>{backgroundBusy ? 'Saving...' : 'Change Background'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleResetBackground}
+            disabled={backgroundBusy || !backgroundPath}
+            className="py-2.5 rounded-xl liquid-glass border border-white/70 text-neutral-800 font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset to Default</span>
+          </button>
+        </div>
+
+        <input
+          ref={backgroundInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleBackgroundFileSelect}
+          className="hidden"
+        />
+
+        {backgroundError && (
+          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-2.5 relative z-10">
+            {backgroundError}
           </div>
         )}
       </div>

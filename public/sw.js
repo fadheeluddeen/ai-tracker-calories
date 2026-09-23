@@ -3,10 +3,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'Plate Log', body: event.data ? event.data.text() : '' };
+    data = { title: 'Calorie Tracker', body: event.data ? event.data.text() : '' };
   }
 
-  const title = data.title || 'Plate Log';
+  const title = data.title || 'Calorie Tracker';
   const options = { body: data.body || '' };
 
   event.waitUntil(self.registration.showNotification(title, options));

@@ -38,7 +38,7 @@ router.post('/subscribe', async (req, res) => {
 router.post('/test', async (req, res) => {
   try {
     const sent = await sendToAllSubscriptions({
-      title: 'Plate Log',
+      title: 'Calorie Tracker',
       body: 'Test notification — push is working.',
     });
     res.json({ sent });
