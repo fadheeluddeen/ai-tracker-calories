@@ -17,18 +17,19 @@ import { hapticSuccess, hapticMedium, hapticWarning } from './utils/haptics';
 
 const today = getTodayDateString();
 
-// Theme-specific wallpaper backgrounds with organic shapes to refract through liquid glass
+// Theme-specific wallpaper backgrounds with organic shapes to refract through liquid glass.
+// Real multi-hue color (not one pale tint) so the glass blur has something to work with.
 function getThemeBackgroundClass(theme: GlassTheme): string {
   switch (theme) {
     case 'frost':
-      return 'bg-gradient-to-br from-slate-200 via-sky-100 to-indigo-100';
+      return 'bg-gradient-to-br from-amber-200 via-sky-300 to-fuchsia-300';
     case 'aurora':
-      return 'bg-gradient-to-br from-zinc-200 via-stone-200 to-slate-300';
+      return 'bg-gradient-to-br from-teal-200 via-violet-200 to-rose-200';
     case 'graphite':
-      return 'bg-gradient-to-br from-neutral-300 via-slate-400 to-zinc-400';
+      return 'bg-gradient-to-br from-slate-400 via-indigo-400 to-neutral-500';
     case 'titanium':
     default:
-      return 'bg-gradient-to-br from-zinc-200 via-stone-200 to-neutral-300';
+      return 'bg-gradient-to-br from-stone-300 via-zinc-300 to-amber-100';
   }
 }
 
@@ -37,34 +38,38 @@ function ThemeOrbs({ theme }: { theme: GlassTheme }) {
     case 'frost':
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-16 -left-16 w-88 h-88 rounded-full bg-sky-300/50 blur-3xl animate-fluid-1" />
-          <div className="absolute top-1/3 -right-20 w-88 h-88 rounded-full bg-indigo-200/50 blur-3xl animate-fluid-2" />
-          <div className="absolute -bottom-20 left-1/4 w-88 h-88 rounded-full bg-blue-300/40 blur-3xl animate-fluid-3" />
+          <div className="absolute -top-24 -left-20 w-[26rem] h-[26rem] rounded-full bg-amber-300/45 blur-3xl animate-fluid-1" />
+          <div className="absolute top-1/4 -right-24 w-[28rem] h-[28rem] rounded-full bg-sky-400/50 blur-3xl animate-fluid-2" />
+          <div className="absolute -bottom-24 left-[15%] w-[26rem] h-[26rem] rounded-full bg-fuchsia-400/40 blur-3xl animate-fluid-3" />
+          <div className="absolute top-2/3 right-1/4 w-80 h-80 rounded-full bg-violet-300/45 blur-3xl animate-fluid-4" />
         </div>
       );
     case 'aurora':
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-12 right-0 w-80 h-80 rounded-full bg-stone-400/35 blur-3xl animate-fluid-1" />
-          <div className="absolute top-1/2 -left-20 w-88 h-88 rounded-full bg-zinc-400/35 blur-3xl animate-fluid-2" />
-          <div className="absolute -bottom-12 right-10 w-80 h-80 rounded-full bg-neutral-400/30 blur-3xl animate-fluid-3" />
+          <div className="absolute -top-16 right-0 w-[26rem] h-[26rem] rounded-full bg-teal-300/45 blur-3xl animate-fluid-1" />
+          <div className="absolute top-1/2 -left-24 w-[28rem] h-[28rem] rounded-full bg-violet-400/45 blur-3xl animate-fluid-2" />
+          <div className="absolute -bottom-16 right-12 w-80 h-80 rounded-full bg-rose-300/40 blur-3xl animate-fluid-3" />
+          <div className="absolute top-1/4 left-1/3 w-72 h-72 rounded-full bg-amber-300/40 blur-3xl animate-fluid-4" />
         </div>
       );
     case 'graphite':
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-12 -left-12 w-80 h-80 rounded-full bg-slate-500/35 blur-3xl animate-fluid-1" />
-          <div className="absolute bottom-1/4 -right-20 w-88 h-88 rounded-full bg-zinc-600/35 blur-3xl animate-fluid-2" />
-          <div className="absolute top-1/4 left-1/3 w-72 h-72 rounded-full bg-neutral-500/30 blur-3xl animate-fluid-3" />
+          <div className="absolute -top-16 -left-16 w-[26rem] h-[26rem] rounded-full bg-indigo-500/35 blur-3xl animate-fluid-1" />
+          <div className="absolute bottom-1/4 -right-24 w-[28rem] h-[28rem] rounded-full bg-violet-600/35 blur-3xl animate-fluid-2" />
+          <div className="absolute top-1/4 left-1/3 w-80 h-80 rounded-full bg-slate-500/35 blur-3xl animate-fluid-3" />
+          <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-amber-500/25 blur-3xl animate-fluid-4" />
         </div>
       );
     case 'titanium':
     default:
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -left-16 w-96 h-96 rounded-full bg-stone-300/60 blur-3xl animate-fluid-1" />
-          <div className="absolute top-1/3 -right-24 w-96 h-96 rounded-full bg-zinc-300/65 blur-3xl animate-fluid-2" />
-          <div className="absolute -bottom-16 left-8 w-96 h-96 rounded-full bg-neutral-400/50 blur-3xl animate-fluid-3" />
+          <div className="absolute -top-24 -left-20 w-[28rem] h-[28rem] rounded-full bg-stone-400/55 blur-3xl animate-fluid-1" />
+          <div className="absolute top-1/3 -right-28 w-[28rem] h-[28rem] rounded-full bg-zinc-400/55 blur-3xl animate-fluid-2" />
+          <div className="absolute -bottom-20 left-8 w-[26rem] h-[26rem] rounded-full bg-neutral-500/45 blur-3xl animate-fluid-3" />
+          <div className="absolute top-2/3 right-1/3 w-72 h-72 rounded-full bg-amber-300/30 blur-3xl animate-fluid-4" />
         </div>
       );
   }
