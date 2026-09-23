@@ -9,12 +9,41 @@ interface CameraCaptureModalProps {
   onCapture: (imageDataUrl: string) => void;
 }
 
+// This modal is mounted three times (meal log, pantry, chef). Caching the
+// live MediaStream at module scope — instead of in component state — means
+// every mount shares one already-granted camera, and closing/reopening the
+// modal (or switching between those three screens) reuses it instead of
+// calling getUserMedia() again. Browsers only need to ask for camera
+// permission on that first call per session; repeating the call on every
+// open was the reason permission looked like it was being re-requested
+// each time.
+let cachedStream: MediaStream | null = null;
+let cachedFacingMode: 'environment' | 'user' | null = null;
+
+function streamIsLive(s: MediaStream | null): s is MediaStream {
+  return !!s && s.getVideoTracks().some((t) => t.readyState === 'live');
+}
+
+function releaseCachedStream() {
+  cachedStream?.getTracks().forEach((track) => track.stop());
+  cachedStream = null;
+  cachedFacingMode = null;
+}
+
+if (typeof document !== 'undefined') {
+  // Still release the hardware once the app is actually backgrounded or
+  // closed, rather than keeping it "hot" indefinitely.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') releaseCachedStream();
+  });
+  window.addEventListener('pagehide', releaseCachedStream);
+}
+
 export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
   isOpen,
   onClose,
   onCapture,
 }) => {
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
@@ -25,13 +54,10 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileFallbackRef = useRef<HTMLInputElement>(null);
 
-  // Stop camera tracks helper
-  const stopTracks = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-  }, [stream]);
+  // Detaches the preview without releasing the underlying hardware/permission.
+  const pauseTracks = useCallback(() => {
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
 
   // Check available camera devices
   useEffect(() => {
@@ -43,10 +69,18 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     }
   }, []);
 
-  // Start camera stream
+  // Start camera stream — reuses the cached stream when it's still live and
+  // facing the same direction, only calling getUserMedia() when there's no
+  // usable stream to reuse (first-ever open, or after flipping cameras).
   const startCamera = useCallback(async (mode: 'environment' | 'user') => {
     setCameraError(null);
-    stopTracks();
+
+    if (streamIsLive(cachedStream) && cachedFacingMode === mode) {
+      if (videoRef.current) videoRef.current.srcObject = cachedStream;
+      return;
+    }
+
+    releaseCachedStream();
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraError('Camera API is not supported in this browser. You can take or pick a photo using file upload.');
@@ -72,7 +106,8 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
         });
       }
 
-      setStream(mediaStream);
+      cachedStream = mediaStream;
+      cachedFacingMode = mode;
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
@@ -87,23 +122,21 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
         setCameraError('Unable to start live camera preview.');
       }
     }
-  }, [stopTracks]);
+  }, []);
 
-  // Handle open/close lifecycle
+  // Handle open/close lifecycle. Closing only detaches the preview — it
+  // deliberately does NOT stop the cached stream, so reopening (this modal
+  // or one of its other two mounts) doesn't re-request the camera.
   useEffect(() => {
     if (isOpen) {
       setCapturedImage(null);
       startCamera(facingMode);
     } else {
-      stopTracks();
+      pauseTracks();
       setCapturedImage(null);
       setCameraError(null);
     }
-
-    return () => {
-      stopTracks();
-    };
-  }, [isOpen, facingMode, startCamera, stopTracks]);
+  }, [isOpen, facingMode, startCamera, pauseTracks]);
 
   // Capture current frame from video stream onto canvas
   const handleSnap = () => {
@@ -151,16 +184,16 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     setCapturedImage(dataUrl);
 
-    // Pause live stream preview to save battery
-    stopTracks();
+    // Detach the preview (camera stays warm in the cache for a fast retake
+    // or the next photo — see the module-level stream cache above).
+    pauseTracks();
   };
 
-  // Flip between front and back cameras
+  // Flip between front and back cameras — changing facingMode re-runs the
+  // open/close effect above, which calls startCamera(nextMode) for us.
   const toggleCamera = () => {
     hapticMedium();
-    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
-    setFacingMode(nextMode);
-    startCamera(nextMode);
+    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
   // Confirm captured photo

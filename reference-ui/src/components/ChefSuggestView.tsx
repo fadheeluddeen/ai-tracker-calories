@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, RefreshCw, ChevronDown, Flame, Check, PlusCircle } from 'lucide-react';
-import { getChefSuggestions, ChefDish, ManualMealInput } from '../api';
+import { Sparkles, RefreshCw, ChevronDown, Flame, Check, PlusCircle, Camera, Upload } from 'lucide-react';
+import { getChefSuggestions, postPantryPhoto, ChefDish, ManualMealInput } from '../api';
 import { hapticMedium, hapticSuccess, hapticWarning, hapticLight } from '../utils/haptics';
+import { CameraCaptureModal } from './CameraCaptureModal';
 
 interface ChefSuggestViewProps {
   onLogMeal: (input: ManualMealInput) => Promise<boolean>;
@@ -15,6 +16,13 @@ export const ChefSuggestView: React.FC<ChefSuggestViewProps> = ({ onLogMeal }) =
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [loggedIdx, setLoggedIdx] = useState<number | null>(null);
+
+  // Add-what-I-have: same pantry photo capture as the Pantry tab, so you
+  // don't have to leave Chef to tell it about an ingredient you're holding.
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [isAddingPhoto, setIsAddingPhoto] = useState(false);
+  const [addPhotoError, setAddPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogDish = async (dish: ChefDish, idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,6 +61,39 @@ export const ChefSuggestView: React.FC<ChefSuggestViewProps> = ({ onLogMeal }) =
     fetchSuggestions();
   }, [fetchSuggestions]);
 
+  const addIngredientPhoto = async (imageDataUrl: string) => {
+    hapticMedium();
+    setIsAddingPhoto(true);
+    setAddPhotoError(null);
+    try {
+      await postPantryPhoto(imageDataUrl);
+      hapticSuccess();
+      await fetchSuggestions();
+    } catch (err: any) {
+      hapticWarning();
+      setAddPhotoError(err.message || 'Failed to save ingredient');
+    } finally {
+      setIsAddingPhoto(false);
+    }
+  };
+
+  const handleCameraCapture = (imageDataUrl: string) => {
+    setShowCameraModal(false);
+    addIngredientPhoto(imageDataUrl);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) addIngredientPhoto(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   return (
     <div className="space-y-4 pb-24 select-none">
       {/* Top Header Card */}
@@ -72,17 +113,59 @@ export const ChefSuggestView: React.FC<ChefSuggestViewProps> = ({ onLogMeal }) =
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={fetchSuggestions}
-            disabled={loading}
-            className="w-9 h-9 rounded-full liquid-droplet flex items-center justify-center text-neutral-700 hover:text-neutral-900 active:scale-95 transition-all disabled:opacity-50"
-            title="Refresh suggestions"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                hapticMedium();
+                setShowCameraModal(true);
+              }}
+              disabled={isAddingPhoto}
+              className="w-9 h-9 rounded-full liquid-droplet-dark text-white flex items-center justify-center active:scale-95 transition-all shadow-md disabled:opacity-50"
+              title="Snap what you have"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isAddingPhoto}
+              className="w-9 h-9 rounded-full liquid-glass flex items-center justify-center text-neutral-800 border border-white/70 active:scale-95 transition-all disabled:opacity-50"
+              title="Upload a photo of what you have"
+            >
+              <Upload className="w-4 h-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={fetchSuggestions}
+              disabled={loading}
+              className="w-9 h-9 rounded-full liquid-droplet flex items-center justify-center text-neutral-700 hover:text-neutral-900 active:scale-95 transition-all disabled:opacity-50"
+              title="Refresh suggestions"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
+
+        {isAddingPhoto && (
+          <p className="mt-3 text-[11px] font-semibold text-neutral-600 relative z-10">
+            Identifying what you have...
+          </p>
+        )}
       </div>
+
+      {addPhotoError && (
+        <div className="liquid-glass rounded-2xl p-4 border border-red-200 bg-red-50/60 text-xs text-red-700">
+          {addPhotoError}
+        </div>
+      )}
 
       {error && (
         <div className="liquid-glass rounded-2xl p-4 border border-red-200 bg-red-50/60 text-xs text-red-700">
@@ -98,7 +181,7 @@ export const ChefSuggestView: React.FC<ChefSuggestViewProps> = ({ onLogMeal }) =
         <div className="liquid-glass liquid-sheen rounded-3xl p-8 text-center border border-white/70 shadow-sm">
           <h3 className="text-base font-bold text-neutral-900 tracking-tight">No suggestions yet</h3>
           <p className="text-xs text-neutral-600 max-w-xs mx-auto mt-1 leading-relaxed">
-            Add some ingredients to your Pantry, then tap refresh here.
+            Snap or upload a photo of what you have (top right), or add it to your Pantry, then tap refresh here.
           </p>
         </div>
       ) : (
@@ -193,6 +276,12 @@ export const ChefSuggestView: React.FC<ChefSuggestViewProps> = ({ onLogMeal }) =
           })}
         </div>
       )}
+
+      <CameraCaptureModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={handleCameraCapture}
+      />
     </div>
   );
 };

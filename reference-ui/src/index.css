@@ -118,6 +118,55 @@
   --glass-shadow: 0 14px 26px -10px rgba(0, 0, 0, 0.16), 0 5px 10px -4px rgba(0, 0, 0, 0.08);
 }
 
+/* Custom-photo backdrop variant — a user's own photo can be far more
+   saturated/bright than the tuned gradient orbs, and backdrop-filter's
+   saturate() amplifies whatever hue leaks through. Raising the glass
+   panels' own opaque-white floor (and dialing saturate back) keeps text
+   reading on a near-white surface regardless of the photo underneath,
+   instead of tinting the whole panel the photo's dominant color. Only
+   applied when [data-custom-bg="true"] is set (App.tsx), so the default
+   gradient/orbs background keeps its already-tuned look untouched. */
+[data-custom-bg="true"] .liquid-glass {
+  background:
+    radial-gradient(140px 140px at 14% 10%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.62) 45%, rgba(255, 255, 255, 0.3) 72%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.82) 0%,
+      rgba(255, 255, 255, 0.62) 38%,
+      rgba(255, 255, 255, 0.5) 68%,
+      rgba(255, 255, 255, 0.7) 100%
+    );
+  backdrop-filter: blur(34px) saturate(130%) brightness(100%);
+  -webkit-backdrop-filter: blur(34px) saturate(130%) brightness(100%);
+}
+
+[data-custom-bg="true"] .liquid-glass-subtle {
+  background:
+    radial-gradient(100px 100px at 14% 10%, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.5) 45%, rgba(255, 255, 255, 0.22) 70%),
+    linear-gradient(
+      140deg,
+      rgba(255, 255, 255, 0.68) 0%,
+      rgba(255, 255, 255, 0.48) 50%,
+      rgba(255, 255, 255, 0.58) 100%
+    );
+  backdrop-filter: blur(28px) saturate(125%);
+  -webkit-backdrop-filter: blur(28px) saturate(125%);
+}
+
+[data-custom-bg="true"] .liquid-glass-thick {
+  background:
+    radial-gradient(160px 160px at 14% 8%, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.65) 45%, rgba(255, 255, 255, 0.32) 72%),
+    linear-gradient(
+      130deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.68) 42%,
+      rgba(255, 255, 255, 0.55) 75%,
+      rgba(255, 255, 255, 0.8) 100%
+    );
+  backdrop-filter: blur(42px) saturate(135%) brightness(100%);
+  -webkit-backdrop-filter: blur(42px) saturate(135%) brightness(100%);
+}
+
 /* Liquid Droplet Pill - Looks like a water bead resting on the glass screen */
 .liquid-droplet {
   background: radial-gradient(
