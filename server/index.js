@@ -7,6 +7,8 @@ const chefRouter = require('./routes/chef');
 const supplementsRouter = require('./routes/supplements');
 const pushRouter = require('./routes/push');
 const settingsRouter = require('./routes/settings');
+const profileRouter = require('./routes/profile');
+const weightRouter = require('./routes/weight');
 const { ensureSeeded } = require('./services/settings');
 const { startSupplementReminderJob } = require('./jobs/supplementReminders');
 
@@ -25,6 +27,8 @@ app.use('/api/chef', chefRouter);
 app.use('/api/supplements', supplementsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/profile', profileRouter);
+app.use('/api/weight', weightRouter);
 
 // Real frontend (built via `npm run build:client`). Single-page app, so any
 // non-API, non-static route falls through to index.html.
