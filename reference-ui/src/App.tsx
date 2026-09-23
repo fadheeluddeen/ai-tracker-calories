@@ -200,7 +200,7 @@ export default function App() {
   return (
     <div
       data-custom-bg={backgroundImagePath ? 'true' : undefined}
-      className={`min-h-dvh w-full max-w-md mx-auto relative flex flex-col overflow-hidden ${
+      className={`h-dvh w-full max-w-md mx-auto relative flex flex-col overflow-hidden ${
         backgroundImagePath ? 'bg-neutral-800' : getThemeBackgroundClass(theme)
       } text-neutral-900 transition-colors duration-500`}
     >

@@ -31,31 +31,67 @@
   background-size: 140px 140px;
 }
 
-.liquid-glass {
-  /* Base tint + a bright top-left specular pool simulating a light source,
-     layered underneath the grain and above whatever's behind the panel. */
+/* iOS 26-style Liquid Glass material.
+   --gx/--gy place the specular highlight. They rest at the top-left "light
+   source" and follow the finger while a panel is pressed (utils/glassPointer
+   sets them), then glide back on release — registered with @property so the
+   browser can animate them. --glow-a is the extra press glow under the finger.
+   inherits:false stops a pressed card's values leaking into glass nested in it. */
+@property --gx { syntax: '<percentage>'; inherits: false; initial-value: 14%; }
+@property --gy { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --glow-a { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+.liquid-glass,
+.liquid-glass-subtle,
+.liquid-glass-thick {
+  position: relative;
   background:
-    radial-gradient(140px 140px at 14% 10%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.28) 45%, rgba(255, 255, 255, 0) 72%),
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.65) 0%,
-      rgba(255, 255, 255, 0.35) 38%,
-      rgba(255, 255, 255, 0.2) 68%,
-      rgba(255, 255, 255, 0.48) 100%
-    );
+    radial-gradient(circle 150px at var(--gx) var(--gy), rgba(255, 255, 255, var(--glow-a)) 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(var(--spec-size) var(--spec-size) at var(--gx) var(--gy), rgba(255, 255, 255, var(--spec-a)) 0%, rgba(255, 255, 255, calc(var(--spec-a) * 0.33)) 45%, rgba(255, 255, 255, 0) 72%),
+    var(--glass-fill);
+  /* Thin rim; the bright corner "light catch" comes from the inset shadows. */
+  border: 1px solid rgba(255, 255, 255, var(--rim-a));
+  transition:
+    transform 130ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 150ms ease,
+    --gx 650ms cubic-bezier(0.2, 0.9, 0.25, 1),
+    --gy 650ms cubic-bezier(0.2, 0.9, 0.25, 1),
+    --glow-a 450ms ease;
+}
+
+.liquid-glass[data-glass-active],
+.liquid-glass-subtle[data-glass-active],
+.liquid-glass-thick[data-glass-active] {
+  --glow-a: 0.75;
+  transition:
+    transform 130ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 150ms ease,
+    --gx 70ms linear,
+    --gy 70ms linear,
+    --glow-a 120ms ease;
+}
+
+.liquid-glass {
+  --spec-size: 140px;
+  --spec-a: 0.85;
+  --rim-a: 0.55;
+  --glass-fill: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.35) 38%,
+    rgba(255, 255, 255, 0.2) 68%,
+    rgba(255, 255, 255, 0.48) 100%
+  );
   backdrop-filter: blur(34px) saturate(200%) brightness(103%);
   -webkit-backdrop-filter: blur(34px) saturate(200%) brightness(103%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
   --glass-shadow: 0 22px 46px -10px rgba(0, 0, 0, 0.20), 0 8px 18px -4px rgba(0, 0, 0, 0.10);
   box-shadow:
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95), /* Top specular rim */
-    inset 0 0 22px 0 rgba(255, 255, 255, 0.35),     /* Internal liquid diffusion */
-    inset 0 -2px 3px 0 rgba(0, 0, 0, 0.04),         /* Bottom ambient bevel */
-    inset 1px 0 1.5px 0 rgba(255, 255, 255, 0.5),   /* Left edge light */
-    inset -1px 0 1.5px 0 rgba(255, 255, 255, 0.3),  /* Right edge refraction */
-    var(--glass-shadow);                            /* Real cast shadow onto what's behind/below */
-  position: relative;
-  transition: transform 130ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease;
+    inset 1.5px 1.5px 1px -0.5px rgba(255, 255, 255, 0.95), /* Top-left rim light catch */
+    inset -1.5px -1.5px 1px -0.5px rgba(255, 255, 255, 0.6), /* Bottom-right refracted rim */
+    inset 0 0 22px 0 rgba(255, 255, 255, 0.35),             /* Internal liquid diffusion */
+    inset -10px -14px 24px -12px rgba(255, 255, 255, 0.45), /* Bottom-right lens pool */
+    inset 0 -2px 3px 0 rgba(0, 0, 0, 0.04),                 /* Bottom ambient bevel */
+    var(--glass-shadow);                                    /* Real cast shadow */
 }
 
 .liquid-glass:active {
@@ -64,25 +100,24 @@
 }
 
 .liquid-glass-subtle {
-  background:
-    radial-gradient(100px 100px at 14% 10%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.22) 45%, rgba(255, 255, 255, 0) 70%),
-    linear-gradient(
-      140deg,
-      rgba(255, 255, 255, 0.48) 0%,
-      rgba(255, 255, 255, 0.22) 50%,
-      rgba(255, 255, 255, 0.38) 100%
-    );
+  --spec-size: 100px;
+  --spec-a: 0.72;
+  --rim-a: 0.45;
+  --glass-fill: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.48) 0%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.38) 100%
+  );
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
   --glass-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12);
   box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.85),
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.85),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.5),
     inset 0 0 12px 0 rgba(255, 255, 255, 0.2),
     inset 0 -1px 1px 0 rgba(0, 0, 0, 0.03),
     var(--glass-shadow);
-  position: relative;
-  transition: transform 130ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease;
 }
 
 .liquid-glass-subtle:active {
@@ -91,26 +126,26 @@
 }
 
 .liquid-glass-thick {
-  background:
-    radial-gradient(160px 160px at 14% 8%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.32) 45%, rgba(255, 255, 255, 0) 72%),
-    linear-gradient(
-      130deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.45) 42%,
-      rgba(255, 255, 255, 0.3) 75%,
-      rgba(255, 255, 255, 0.6) 100%
-    );
+  --spec-size: 160px;
+  --spec-a: 0.95;
+  --rim-a: 0.65;
+  --glass-fill: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.45) 42%,
+    rgba(255, 255, 255, 0.3) 75%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
   backdrop-filter: blur(42px) saturate(210%) brightness(105%);
   -webkit-backdrop-filter: blur(42px) saturate(210%) brightness(105%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
   --glass-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.24), 0 10px 22px -4px rgba(0, 0, 0, 0.12);
   box-shadow:
-    inset 0 2px 1.5px 0 rgba(255, 255, 255, 1),
+    inset 2px 2px 1.5px -0.5px rgba(255, 255, 255, 1),
+    inset -2px -2px 1.5px -0.5px rgba(255, 255, 255, 0.7),
     inset 0 0 30px 0 rgba(255, 255, 255, 0.45),
+    inset -12px -16px 28px -14px rgba(255, 255, 255, 0.5),
     inset 0 -2.5px 4px 0 rgba(0, 0, 0, 0.06),
     var(--glass-shadow);
-  position: relative;
-  transition: transform 130ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease;
 }
 
 .liquid-glass-thick:active {
@@ -122,49 +157,62 @@
    saturated/bright than the tuned gradient orbs, and backdrop-filter's
    saturate() amplifies whatever hue leaks through. Raising the glass
    panels' own opaque-white floor (and dialing saturate back) keeps text
-   reading on a near-white surface regardless of the photo underneath,
-   instead of tinting the whole panel the photo's dominant color. Only
-   applied when [data-custom-bg="true"] is set (App.tsx), so the default
-   gradient/orbs background keeps its already-tuned look untouched. */
+   reading on a near-white surface regardless of the photo underneath.
+   Only applied when [data-custom-bg="true"] is set (App.tsx). */
 [data-custom-bg="true"] .liquid-glass {
-  background:
-    radial-gradient(140px 140px at 14% 10%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.62) 45%, rgba(255, 255, 255, 0.3) 72%),
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.82) 0%,
-      rgba(255, 255, 255, 0.62) 38%,
-      rgba(255, 255, 255, 0.5) 68%,
-      rgba(255, 255, 255, 0.7) 100%
-    );
+  --spec-a: 0.92;
+  --glass-fill: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 255, 255, 0.62) 38%,
+    rgba(255, 255, 255, 0.5) 68%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
   backdrop-filter: blur(34px) saturate(130%) brightness(100%);
   -webkit-backdrop-filter: blur(34px) saturate(130%) brightness(100%);
 }
 
 [data-custom-bg="true"] .liquid-glass-subtle {
-  background:
-    radial-gradient(100px 100px at 14% 10%, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.5) 45%, rgba(255, 255, 255, 0.22) 70%),
-    linear-gradient(
-      140deg,
-      rgba(255, 255, 255, 0.68) 0%,
-      rgba(255, 255, 255, 0.48) 50%,
-      rgba(255, 255, 255, 0.58) 100%
-    );
+  --spec-a: 0.82;
+  --glass-fill: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.68) 0%,
+    rgba(255, 255, 255, 0.48) 50%,
+    rgba(255, 255, 255, 0.58) 100%
+  );
   backdrop-filter: blur(28px) saturate(125%);
   -webkit-backdrop-filter: blur(28px) saturate(125%);
 }
 
 [data-custom-bg="true"] .liquid-glass-thick {
-  background:
-    radial-gradient(160px 160px at 14% 8%, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.65) 45%, rgba(255, 255, 255, 0.32) 72%),
-    linear-gradient(
-      130deg,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(255, 255, 255, 0.68) 42%,
-      rgba(255, 255, 255, 0.55) 75%,
-      rgba(255, 255, 255, 0.8) 100%
-    );
+  --spec-a: 0.97;
+  --glass-fill: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.68) 42%,
+    rgba(255, 255, 255, 0.55) 75%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
   backdrop-filter: blur(42px) saturate(135%) brightness(100%);
   -webkit-backdrop-filter: blur(42px) saturate(135%) brightness(100%);
+}
+
+/* Tab bar selection lens — a clear glass bubble resting on the bar that
+   springs between tabs (LiquidTabBar, motion layoutId). */
+.liquid-lens {
+  background: radial-gradient(
+    ellipse at 50% 20%,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.45) 55%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 1.5px 1.5px 1px -0.5px rgba(255, 255, 255, 1),
+    inset -1.5px -1.5px 1px -0.5px rgba(255, 255, 255, 0.8),
+    inset 0 0 12px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -3px 6px -2px rgba(0, 0, 0, 0.06),
+    0 4px 12px -4px rgba(0, 0, 0, 0.18);
 }
 
 /* Liquid Droplet Pill - Looks like a water bead resting on the glass screen */
