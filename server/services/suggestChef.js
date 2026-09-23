@@ -1,19 +1,39 @@
 const { suggestDishesWithGemini } = require('./geminiChef');
-const { completeWithOpenRouter } = require('./openrouter');
-const { buildPrompt, parseChefJson } = require('./parseChefJson');
-const { runWithFallback } = require('./aiFallback');
+const { recordGeminiError, clearGeminiError } = require('./settings');
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Gemini -> OpenRouter -> empty dishes list. Never throws: always resolves
- * to a usable result so the route can respond even when both are down.
+ * Gemini (with one retry) -> empty dishes list. Never throws: always
+ * resolves to a usable result so the route can respond even when Gemini
+ * is down. Same retry/error-tracking shape as analyzePantry.js.
  */
 async function suggestChef(ingredients) {
-  const outcome = await runWithFallback('suggestChef', {
-    gemini: () => suggestDishesWithGemini(ingredients),
-    openrouter: async () => parseChefJson(await completeWithOpenRouter(buildPrompt(ingredients))),
-  });
+  let lastErr;
 
-  return outcome ? outcome.result : { dishes: [] };
+  try {
+    const result = await suggestDishesWithGemini(ingredients);
+    await clearGeminiError();
+    return result;
+  } catch (err) {
+    lastErr = err;
+    console.error('[suggestChef] gemini attempt 1 failed:', err.message);
+  }
+
+  await sleep(1000);
+
+  try {
+    const result = await suggestDishesWithGemini(ingredients);
+    await clearGeminiError();
+    return result;
+  } catch (err) {
+    lastErr = err;
+    console.error('[suggestChef] gemini retry failed:', err.message);
+  }
+
+  await recordGeminiError(lastErr);
+
+  return { dishes: [] };
 }
 
 module.exports = { suggestChef };
