@@ -1,40 +1,21 @@
 const { analyzeIngredientWithGemini } = require('./geminiPantry');
-const { recordGeminiError, clearGeminiError } = require('./settings');
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const { completeWithOpenRouter } = require('./openrouter');
+const { PROMPT, parsePantryJson } = require('./parsePantryJson');
+const { runWithFallback } = require('./aiFallback');
 
 /**
- * Gemini (with one retry) -> null-field placeholder. Never throws: always
+ * Gemini -> OpenRouter -> null-field placeholder. Never throws: always
  * resolves to a row-shaped result so the caller can save the pantry item
- * (photo included) even when Gemini is down. Same shape as analyze.js for
- * meals — pantry_ingredients has no analysis_failed column, so a null
- * `name` is the signal that identification failed. Same settings-table
- * error tracking as analyze.js.
+ * (photo included) even when both providers are down. pantry_ingredients
+ * has no analysis_failed column, so a null `name` is the failure signal.
  */
 async function analyzePantryPhoto(buffer) {
-  let lastErr;
+  const outcome = await runWithFallback('analyzePantry', {
+    gemini: () => analyzeIngredientWithGemini(buffer),
+    openrouter: async () => parsePantryJson(await completeWithOpenRouter(PROMPT, buffer)),
+  });
 
-  try {
-    const result = await analyzeIngredientWithGemini(buffer);
-    await clearGeminiError();
-    return result;
-  } catch (err) {
-    lastErr = err;
-    console.error('[analyzePantry] gemini attempt 1 failed:', err.message);
-  }
-
-  await sleep(1000);
-
-  try {
-    const result = await analyzeIngredientWithGemini(buffer);
-    await clearGeminiError();
-    return result;
-  } catch (err) {
-    lastErr = err;
-    console.error('[analyzePantry] gemini retry failed:', err.message);
-  }
-
-  await recordGeminiError(lastErr);
+  if (outcome) return outcome.result;
 
   return {
     name: null,
