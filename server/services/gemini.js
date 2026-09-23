@@ -15,7 +15,7 @@ async function analyzeWithGemini(buffer) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.8-flash',
     generationConfig: { responseMimeType: 'application/json' },
   });
 
