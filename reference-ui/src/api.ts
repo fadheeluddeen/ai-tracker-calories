@@ -193,3 +193,80 @@ export function setGeminiKey(pin: string, key: string): Promise<SettingsInfo> {
     body: JSON.stringify({ key }),
   }).then((r) => handle(r));
 }
+
+// ---- Profile & real calorie/macro calculation (Mifflin-St Jeor) ----
+
+export type Sex = 'male' | 'female';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+export type WeightGoal = 'lose' | 'maintain' | 'gain';
+
+export interface Profile {
+  id: number;
+  sex: Sex;
+  age: number;
+  height_cm: number;
+  activity_level: ActivityLevel;
+  goal: WeightGoal;
+  updated_at: string;
+}
+
+export interface WeightLogEntry {
+  id: number;
+  weight_kg: number;
+  logged_at: string;
+}
+
+export interface CalculatedGoals {
+  bmr: number;
+  tdee: number;
+  calorie_goal: number;
+  protein_g: number;
+  fat_g: number;
+  carbs_g: number;
+}
+
+export interface ProfileResponse {
+  profile: Profile | null;
+  latest_weight: WeightLogEntry | null;
+  goals: CalculatedGoals | null;
+}
+
+// Postgres `numeric` columns come back as strings over JSON — normalize here
+// so the rest of the app only ever deals in real numbers.
+export function getProfile(): Promise<ProfileResponse> {
+  return fetch('/api/profile')
+    .then((r) => handle<any>(r))
+    .then((data) => ({
+      profile: data.profile ? { ...data.profile, height_cm: Number(data.profile.height_cm) } : null,
+      latest_weight: data.latest_weight
+        ? { ...data.latest_weight, weight_kg: Number(data.latest_weight.weight_kg) }
+        : null,
+      goals: data.goals,
+    }));
+}
+
+export function updateProfile(input: {
+  sex: Sex;
+  age: number;
+  height_cm: number;
+  activity_level: ActivityLevel;
+  goal: WeightGoal;
+}): Promise<Profile> {
+  return fetch('/api/profile', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+    .then((r) => handle<any>(r))
+    .then((p) => ({ ...p, height_cm: Number(p.height_cm) }));
+}
+
+export function logWeight(weightKg: number): Promise<WeightLogEntry> {
+  return fetch('/api/weight', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ weight_kg: weightKg }),
+  })
+    .then((r) => handle<any>(r))
+    .then((w) => ({ ...w, weight_kg: Number(w.weight_kg) }));
+}

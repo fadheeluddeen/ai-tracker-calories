@@ -12,7 +12,7 @@ import { PantryIngredientsView } from './components/PantryIngredientsView';
 import { ChefSuggestView } from './components/ChefSuggestView';
 import { SupplementsView } from './components/SupplementsView';
 import { CameraCaptureModal } from './components/CameraCaptureModal';
-import { getMealsToday, getMealsByDate, postMealPhoto, DayMeals, isNotFoodResult } from './api';
+import { getMealsToday, getMealsByDate, postMealPhoto, DayMeals, isNotFoodResult, getProfile } from './api';
 import { hapticSuccess, hapticMedium, hapticWarning } from './utils/haptics';
 
 const today = getTodayDateString();
@@ -86,23 +86,31 @@ export default function App() {
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [notFoodMessage, setNotFoodMessage] = useState<string | null>(null);
 
-  // Goals persist locally — no user/goals table on the backend.
-  const [goals, setGoals] = useState<UserGoals>(() => {
+  // Real goals, calculated server-side (Mifflin-St Jeor) from profile + latest
+  // weigh-in. Falls back to DEFAULT_GOALS until a profile/weight exist yet.
+  const [goals, setGoals] = useState<UserGoals>(DEFAULT_GOALS);
+
+  const loadProfileGoals = useCallback(async () => {
     try {
-      const saved = localStorage.getItem('ios_calorie_goals');
-      return saved ? JSON.parse(saved) : DEFAULT_GOALS;
-    } catch {
-      return DEFAULT_GOALS;
+      const data = await getProfile();
+      if (data.goals) {
+        setGoals({
+          calories: data.goals.calorie_goal,
+          protein: data.goals.protein_g,
+          carbs: data.goals.carbs_g,
+          fat: data.goals.fat_g,
+        });
+      } else {
+        setGoals(DEFAULT_GOALS);
+      }
+    } catch (err) {
+      console.error('Failed to load profile goals:', err);
     }
-  });
+  }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('ios_calorie_goals', JSON.stringify(goals));
-    } catch {
-      // ignore
-    }
-  }, [goals]);
+    loadProfileGoals();
+  }, [loadProfileGoals]);
 
   const loadMealsForDate = useCallback(async (date: string) => {
     setMealsLoading(true);
@@ -154,10 +162,6 @@ export default function App() {
     }
   };
 
-  const handleSaveGoals = (newGoals: UserGoals) => {
-    setGoals(newGoals);
-  };
-
   return (
     <div
       className={`min-h-dvh w-full max-w-md mx-auto relative flex flex-col overflow-hidden ${getThemeBackgroundClass(theme)} text-neutral-900 transition-colors duration-500`}
@@ -203,7 +207,7 @@ export default function App() {
 
         {activeTab === 'trends' && <TrendsView goals={goals} />}
 
-        {activeTab === 'profile' && <ProfileView goals={goals} onSaveGoals={handleSaveGoals} />}
+        {activeTab === 'profile' && <ProfileView onProfileSaved={loadProfileGoals} />}
       </div>
       </div>
 
