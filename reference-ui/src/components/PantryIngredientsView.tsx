@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Camera, Upload, Plus, Trash2, Search, Utensils, X, Sparkles } from 'lucide-react';
+import { Camera, Upload, Plus, Trash2, Search, Utensils, X, Sparkles, PlusCircle, Check } from 'lucide-react';
 import { CameraCaptureModal } from './CameraCaptureModal';
-import { getPantry, postPantryPhoto, deletePantryItem, PantryIngredient } from '../api';
+import { getPantry, postPantryPhoto, deletePantryItem, PantryIngredient, ManualMealInput } from '../api';
 import { hapticLight, hapticMedium, hapticSelection, hapticSuccess, hapticWarning } from '../utils/haptics';
 
 interface PantryIngredientsViewProps {
   onAskChef: () => void;
+  onLogMeal: (input: ManualMealInput) => Promise<boolean>;
 }
 
-export const PantryIngredientsView: React.FC<PantryIngredientsViewProps> = ({ onAskChef }) => {
+export const PantryIngredientsView: React.FC<PantryIngredientsViewProps> = ({ onAskChef, onLogMeal }) => {
   const [ingredients, setIngredients] = useState<PantryIngredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +19,23 @@ export const PantryIngredientsView: React.FC<PantryIngredientsViewProps> = ({ on
   const [isSaving, setIsSaving] = useState(false);
   const [inspectingPhoto, setInspectingPhoto] = useState<PantryIngredient | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loggedId, setLoggedId] = useState<number | null>(null);
+
+  const handleLogIngredient = async (item: PantryIngredient, e: React.MouseEvent) => {
+    e.stopPropagation();
+    hapticLight();
+    const ok = await onLogMeal({
+      food_name: item.name || 'Pantry ingredient',
+      calories: item.calories ?? 0,
+      protein_g: item.protein_g ?? 0,
+      carbs_g: item.carbs_g ?? 0,
+      fat_g: item.fat_g ?? 0,
+    });
+    if (ok) {
+      setLoggedId(item.id);
+      setTimeout(() => setLoggedId(null), 2000);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -259,6 +277,16 @@ export const PantryIngredientsView: React.FC<PantryIngredientsViewProps> = ({ on
                   title="Delete ingredient"
                 >
                   <Trash2 className="w-3 h-3" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => handleLogIngredient(item, e)}
+                  disabled={loggedId === item.id}
+                  className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full liquid-droplet-dark text-white flex items-center justify-center shadow-sm disabled:opacity-80"
+                  title="Log this to today's diary"
+                >
+                  {loggedId === item.id ? <Check className="w-3 h-3" /> : <PlusCircle className="w-3 h-3" />}
                 </button>
               </div>
 

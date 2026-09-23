@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Target, Scale, Activity, Lock, Unlock, KeyRound, AlertTriangle } from 'lucide-react';
+import { Check, Target, Scale, Activity, Lock, Unlock, KeyRound, AlertTriangle, Bell } from 'lucide-react';
 import {
   getSettings,
   setGeminiKey,
@@ -7,6 +7,9 @@ import {
   getProfile,
   updateProfile,
   logWeight,
+  getPushPublicKey,
+  subscribePush,
+  sendTestPush,
   Profile,
   CalculatedGoals,
   Sex,
@@ -14,6 +17,15 @@ import {
   WeightGoal,
 } from '../api';
 import { hapticSuccess, hapticWarning } from '../utils/haptics';
+
+// Converts the VAPID public key (base64url, from the server) into the raw
+// byte array the PushManager subscribe() call requires.
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
 
 interface ProfileViewProps {
   onProfileSaved: () => void;
@@ -64,6 +76,79 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
   const [settingsInfo, setSettingsInfo] = useState<SettingsInfo | null>(null);
   const [newKey, setNewKey] = useState('');
   const [keySaveResult, setKeySaveResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  // Push notifications
+  const [pushSupported, setPushSupported] = useState(true);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushSupported(false);
+      return;
+    }
+    navigator.serviceWorker
+      .getRegistration()
+      .then(async (reg) => {
+        const sub = await reg?.pushManager.getSubscription();
+        setPushSubscribed(!!sub);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleEnablePush = async () => {
+    setPushStatus(null);
+    setPushBusy(true);
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        throw new Error('Push notifications are not supported in this browser.');
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        throw new Error(`Notification permission: ${permission}`);
+      }
+
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      const { publicKey } = await getPushPublicKey();
+      if (!publicKey) throw new Error('Server has no VAPID public key configured.');
+
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+        });
+      }
+
+      await subscribePush(subscription.toJSON() as PushSubscriptionJSON);
+      setPushSubscribed(true);
+      setPushStatus("Subscribed — you'll get supplement reminders on this device.");
+      hapticSuccess();
+    } catch (err: any) {
+      hapticWarning();
+      setPushStatus(err.message || 'Failed to enable notifications');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setPushStatus(null);
+    setPushBusy(true);
+    try {
+      const { sent } = await sendTestPush();
+      setPushStatus(`Sent to ${sent} subscription(s) — check your device.`);
+      hapticSuccess();
+    } catch (err: any) {
+      hapticWarning();
+      setPushStatus(err.message || 'Failed to send test notification');
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -392,6 +477,52 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
                 <div className="font-bold text-neutral-900">{calculated.fat_g}g</div>
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Push notifications — supplement reminders */}
+      <div className="liquid-glass liquid-sheen rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden space-y-3">
+        <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none z-10" />
+
+        <div className="flex items-center justify-between relative z-10">
+          <div>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-neutral-500">Reminders</span>
+            <h3 className="text-base font-bold text-neutral-900 tracking-tight">Push Notifications</h3>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full liquid-glass-subtle border border-white/60 text-[11px] font-semibold text-neutral-700">
+            <span className={`w-2 h-2 rounded-full ${pushSubscribed ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span>{pushSubscribed ? 'Subscribed' : pushSupported ? 'Not subscribed' : 'Not supported'}</span>
+          </div>
+        </div>
+
+        <p className="text-xs text-neutral-600 relative z-10">
+          Enable to get a push notification on this device when a supplement reminder is due.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 relative z-10">
+          <button
+            type="button"
+            onClick={handleEnablePush}
+            disabled={pushBusy || !pushSupported}
+            className="py-2.5 rounded-xl liquid-droplet-dark text-white font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            <Bell className="w-3.5 h-3.5" />
+            <span>{pushSubscribed ? 'Re-subscribe' : 'Enable'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleTestPush}
+            disabled={pushBusy}
+            className="py-2.5 rounded-xl liquid-glass border border-white/70 text-neutral-800 font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            <span>Send Test</span>
+          </button>
+        </div>
+
+        {pushStatus && (
+          <div className="text-xs text-neutral-700 bg-white/50 border border-white/60 rounded-xl p-2.5 relative z-10">
+            {pushStatus}
           </div>
         )}
       </div>

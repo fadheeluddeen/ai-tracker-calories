@@ -26,7 +26,10 @@ export const LiquidTabBar: React.FC<LiquidTabBarProps> = ({
   };
 
   return (
-    <div className="absolute bottom-3.5 left-2 right-2 z-40 flex justify-center pointer-events-none select-none">
+    <div
+      className="absolute left-2 right-2 z-40 flex justify-center pointer-events-none select-none"
+      style={{ bottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       <div className="liquid-glass-thick liquid-sheen rounded-[28px] p-1.5 px-2 flex items-center gap-1 border border-white/80 shadow-xl pointer-events-auto w-full justify-between relative overflow-hidden backdrop-blur-xl">
         {/* Top razor specular edge */}
         <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none z-10" />

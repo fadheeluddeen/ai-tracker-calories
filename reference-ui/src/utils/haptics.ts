@@ -27,7 +27,7 @@ export const hapticLight = (): void => {
 };
 
 /**
- * Medium impact feedback (e.g., adding water, expanding/collapsing meal drawers)
+ * Medium impact feedback (e.g., snapping a photo, expanding/collapsing meal drawers)
  * Mimics UIImpactFeedbackGenerator(style: .medium)
  */
 export const hapticMedium = (): void => {
@@ -70,7 +70,7 @@ export const hapticSuccess = (): void => {
 };
 
 /**
- * Warning/Deletion feedback (e.g., removing a food item, subtracting water)
+ * Warning/Deletion feedback (e.g., removing a food item, a failed upload)
  * Mimics UINotificationFeedbackGenerator(type: .warning)
  */
 export const hapticWarning = (): void => {

@@ -1,0 +1,282 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Drop Shadow -->
+    <filter id="ios-drop-shadow" x="-15%" y="-15%" width="130%" height="135%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000000" flood-opacity="0.32" />
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+
+    <!-- Glass Frost Blur & Specular Lighting -->
+    <filter id="liquid-bead-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1.8 0" result="contrast" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Squircle Glass Base Gradient (Liquid Frosted Titanium) -->
+    <linearGradient id="squircle-glass" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.88" />
+      <stop offset="35%" stop-color="#f4f4f6" stop-opacity="0.65" />
+      <stop offset="70%" stop-color="#e4e4e7" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#d4d4d8" stop-opacity="0.75" />
+    </linearGradient>
+
+    <!-- Razor Bevel Rim (Liquid Surface Tension Border) -->
+    <linearGradient id="razor-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="25%" stop-color="#ffffff" stop-opacity="0.5" />
+      <stop offset="50%" stop-color="#a1a1aa" stop-opacity="0.25" />
+      <stop offset="75%" stop-color="#ffffff" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#71717a" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- Inner Glass Lip Highlight -->
+    <linearGradient id="inner-lip" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.08" />
+    </linearGradient>
+
+    <!-- Ambient Caustic Light Refractions -->
+    <radialGradient id="caustic-warm" cx="30%" cy="32%" r="45%">
+      <stop offset="0%" stop-color="#ffedd5" stop-opacity="0.75" />
+      <stop offset="55%" stop-color="#fed7aa" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#ffedd5" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="caustic-cool" cx="70%" cy="68%" r="45%">
+      <stop offset="0%" stop-color="#ccfbf1" stop-opacity="0.6" />
+      <stop offset="60%" stop-color="#e0f2fe" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#bae6fd" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Macro Ring 1: Calorie Flame (Apple Active Calorie Red-Orange) -->
+    <linearGradient id="ring-calorie" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b30" />
+      <stop offset="45%" stop-color="#ff6b22" />
+      <stop offset="90%" stop-color="#ff9500" />
+      <stop offset="100%" stop-color="#ffaa2b" />
+    </linearGradient>
+
+    <!-- Macro Ring 2: Protein Synthesis (Emerald Mint Green) -->
+    <linearGradient id="ring-protein" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34c759" />
+      <stop offset="50%" stop-color="#30d158" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+
+    <!-- Macro Ring 3: Hydration / Glycogen (Electric Cyan-Azure) -->
+    <linearGradient id="ring-water" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#007aff" />
+      <stop offset="55%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+
+    <!-- Glass Meniscus Top Reflection (Curved Sheen) -->
+    <linearGradient id="specular-lens" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55" />
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.25" />
+      <stop offset="85%" stop-color="#ffffff" stop-opacity="0.0" />
+    </linearGradient>
+
+    <!-- Droplet Jewel Central Refraction -->
+    <radialGradient id="droplet-core" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="35%" stop-color="#f8fafc" stop-opacity="0.8" />
+      <stop offset="70%" stop-color="#cbd5e1" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#94a3b8" stop-opacity="0.75" />
+    </radialGradient>
+  </defs>
+
+  <!-- BACKGROUND: Outer Squircle Plate with Liquid Glass Depth -->
+  <g filter="url(#ios-drop-shadow)">
+    <!-- Main Superellipse Container -->
+    <path
+      d="M 256 24
+         C 384 24, 464 24, 488 48
+         C 512 72, 512 152, 512 256
+         C 512 360, 512 440, 488 464
+         C 464 488, 384 488, 256 488
+         C 128 488, 48 488, 24 464
+         C 0 440, 0 360, 0 256
+         C 0 152, 0 72, 24 48
+         C 48 24, 128 24, 256 24 Z"
+      fill="url(#squircle-glass)"
+    />
+
+    <!-- Razor Bevel Rim Contour (1.5px Glass Border) -->
+    <path
+      d="M 256 24
+         C 384 24, 464 24, 488 48
+         C 512 72, 512 152, 512 256
+         C 512 360, 512 440, 488 464
+         C 464 488, 384 488, 256 488
+         C 128 488, 48 488, 24 464
+         C 0 440, 0 360, 0 256
+         C 0 152, 0 72, 24 48
+         C 48 24, 128 24, 256 24 Z"
+      fill="none"
+      stroke="url(#razor-rim)"
+      stroke-width="3"
+    />
+
+    <!-- Inner Soft Specular Lip -->
+    <path
+      d="M 256 28
+         C 382 28, 460 28, 484 52
+         C 508 76, 508 154, 508 256
+         C 508 358, 508 436, 484 460
+         C 460 484, 382 484, 256 484
+         C 130 484, 52 484, 28 460
+         C 4 436, 4 358, 4 256
+         C 4 154, 4 76, 28 52
+         C 52 28, 130 28, 256 28 Z"
+      fill="none"
+      stroke="url(#inner-lip)"
+      stroke-width="1.5"
+    />
+  </g>
+
+  <!-- INTERNAL AMBIENT CAUSTIC DISPERSIONS -->
+  <g opacity="0.8" style="mix-blend-mode: overlay;">
+    <circle cx="170" cy="180" r="140" fill="url(#caustic-warm)" />
+    <circle cx="340" cy="330" r="140" fill="url(#caustic-cool)" />
+  </g>
+
+  <!-- CONCENTRIC APPLE FITNESS LIQUID GLASS MACRO RINGS -->
+  <g id="macro-rings" transform="rotate(-90 256 256)">
+    <!-- ================= 1. CALORIE RING (OUTER, r=164, width=28) ================= -->
+    <!-- Background Track -->
+    <circle
+      cx="256"
+      cy="256"
+      r="164"
+      fill="none"
+      stroke="#18181b"
+      stroke-opacity="0.08"
+      stroke-width="28"
+    />
+    <!-- Active Calorie Arc (approx 290 degrees) -->
+    <circle
+      cx="256"
+      cy="256"
+      r="164"
+      fill="none"
+      stroke="url(#ring-calorie)"
+      stroke-width="28"
+      stroke-linecap="round"
+      stroke-dasharray="1030"
+      stroke-dashoffset="230"
+      filter="url(#liquid-bead-glow)"
+    />
+    <!-- Cap Optical Specular Glint (Start of Outer Ring) -->
+    <circle cx="420" cy="256" r="6" fill="#ffffff" opacity="0.9" filter="url(#liquid-bead-glow)" />
+
+    <!-- ================= 2. PROTEIN RING (MIDDLE, r=124, width=24) ================= -->
+    <!-- Background Track -->
+    <circle
+      cx="256"
+      cy="256"
+      r="124"
+      fill="none"
+      stroke="#18181b"
+      stroke-opacity="0.08"
+      stroke-width="24"
+    />
+    <!-- Active Protein Arc (approx 260 degrees) -->
+    <circle
+      cx="256"
+      cy="256"
+      r="124"
+      fill="none"
+      stroke="url(#ring-protein)"
+      stroke-width="24"
+      stroke-linecap="round"
+      stroke-dasharray="779"
+      stroke-dashoffset="210"
+      filter="url(#liquid-bead-glow)"
+    />
+    <!-- Cap Optical Specular Glint -->
+    <circle cx="380" cy="256" r="5" fill="#ffffff" opacity="0.85" filter="url(#liquid-bead-glow)" />
+
+    <!-- ================= 3. CARBS & WATER RING (INNER, r=88, width=20) ================= -->
+    <!-- Background Track -->
+    <circle
+      cx="256"
+      cy="256"
+      r="88"
+      fill="none"
+      stroke="#18181b"
+      stroke-opacity="0.08"
+      stroke-width="20"
+    />
+    <!-- Active Water Arc (approx 310 degrees) -->
+    <circle
+      cx="256"
+      cy="256"
+      r="88"
+      fill="none"
+      stroke="url(#ring-water)"
+      stroke-width="20"
+      stroke-linecap="round"
+      stroke-dasharray="553"
+      stroke-dashoffset="75"
+      filter="url(#liquid-bead-glow)"
+    />
+    <!-- Cap Optical Specular Glint -->
+    <circle cx="344" cy="256" r="4.5" fill="#ffffff" opacity="0.85" filter="url(#liquid-bead-glow)" />
+  </g>
+
+  <!-- CENTER LIQUID DROPLET JEWEL (Meniscus bead with refractive gloss) -->
+  <g id="center-droplet" transform="translate(256, 256)">
+    <!-- Droplet Drop Shadow -->
+    <ellipse cx="0" cy="18" rx="28" ry="10" fill="#000000" opacity="0.18" filter="url(#liquid-bead-glow)" />
+
+    <!-- Droplet Body Shape -->
+    <path
+      d="M 0 -36
+         C 18 -12, 38 10, 38 28
+         A 38 38 0 0 1 -38 28
+         C -38 10, -18 -12, 0 -36 Z"
+      fill="url(#droplet-core)"
+      stroke="#ffffff"
+      stroke-width="2.5"
+      stroke-opacity="0.9"
+    />
+
+    <!-- Caustic Internal Light Core -->
+    <ellipse cx="0" cy="30" rx="20" ry="12" fill="#ffffff" opacity="0.75" />
+
+    <!-- Flame Specular Icon Motif inside droplet -->
+    <path
+      d="M 0 -14
+         C 5 -5, 12 3, 12 12
+         A 12 12 0 0 1 -12 12
+         C -12 4, -4 -5, 0 -14 Z"
+      fill="#18181b"
+      opacity="0.85"
+    />
+
+    <!-- Specular Highlight Bead -->
+    <ellipse cx="-10" cy="10" rx="6" ry="10" transform="rotate(-30 -10 10)" fill="#ffffff" opacity="0.9" />
+    <circle cx="8" cy="34" r="3" fill="#ffffff" opacity="0.8" />
+  </g>
+
+  <!-- UPPER GLASS LENS SPECULAR CRESCENT (Apple Curved Glass Reflection) -->
+  <path
+    d="M 28 52
+       C 52 28, 130 28, 256 28
+       C 382 28, 460 28, 484 52
+       C 500 68, 506 112, 508 176
+       C 370 216, 142 216, 4 176
+       C 6 112, 12 68, 28 52 Z"
+    fill="url(#specular-lens)"
+    pointer-events="none"
+  />
+
+  <!-- Top Razor Highlight Edge -->
+  <line x1="140" y1="26" x2="372" y2="26" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.95" />
+</svg>

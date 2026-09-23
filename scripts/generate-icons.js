@@ -15,7 +15,11 @@ const sizes = [
 
 async function run() {
   for (const { file, size } of sizes) {
-    await sharp(SRC).resize(size, size).png().toFile(path.join(OUT_DIR, file));
+    await sharp(SRC)
+      .resize(size, size)
+      .flatten({ background: '#ffffff' })
+      .png()
+      .toFile(path.join(OUT_DIR, file));
     console.log(`[icons] wrote ${file}`);
   }
 }

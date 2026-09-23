@@ -8,6 +8,37 @@ const { analyzeFood } = require('../services/analyze');
 
 const router = express.Router();
 
+// Log a meal without a photo — e.g. logging a chef suggestion or a pantry
+// ingredient the user already has known nutrition for. No analysis, no
+// disk/Drive write; photo_disk_path/photo_drive_id stay null.
+router.post('/manual', async (req, res) => {
+  const { food_name, calories, protein_g, carbs_g, fat_g } = req.body || {};
+
+  if (!food_name || typeof food_name !== 'string') {
+    return res.status(400).json({ error: 'food_name is required' });
+  }
+
+  const toInt = (v) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO meals
+        (food_name, calories, protein_g, carbs_g, fat_g, confidence, provider,
+         photo_disk_path, photo_drive_id, analysis_failed)
+       VALUES ($1,$2,$3,$4,$5,NULL,'manual',NULL,NULL,false)
+       RETURNING *`,
+      [food_name.trim(), toInt(calories), toInt(protein_g), toInt(carbs_g), toInt(fat_g)]
+    );
+    return res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[meals] manual insert failed:', err.message);
+    return res.status(500).json({ error: 'failed to log meal' });
+  }
+});
+
 router.post('/', upload.single('photo'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'multipart field "photo" is required' });

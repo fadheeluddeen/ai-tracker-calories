@@ -119,6 +119,22 @@ export function postMealPhoto(imageDataUrl: string): Promise<Meal | NotFoodResul
   return fetch('/api/meals', { method: 'POST', body: form }).then((r) => handle(r));
 }
 
+export interface ManualMealInput {
+  food_name: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
+
+export function logMealManual(input: ManualMealInput): Promise<Meal> {
+  return fetch('/api/meals/manual', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  }).then((r) => handle(r));
+}
+
 // ---- Pantry ----
 
 export function getPantry(): Promise<{ ingredients: PantryIngredient[] }> {
@@ -269,4 +285,22 @@ export function logWeight(weightKg: number): Promise<WeightLogEntry> {
   })
     .then((r) => handle<any>(r))
     .then((w) => ({ ...w, weight_kg: Number(w.weight_kg) }));
+}
+
+// ---- Push notifications ----
+
+export function getPushPublicKey(): Promise<{ publicKey: string | null }> {
+  return fetch('/api/push/public-key').then((r) => handle(r));
+}
+
+export function subscribePush(subscription: PushSubscriptionJSON): Promise<unknown> {
+  return fetch('/api/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(subscription),
+  }).then((r) => handle(r));
+}
+
+export function sendTestPush(): Promise<{ sent: number }> {
+  return fetch('/api/push/test', { method: 'POST' }).then((r) => handle(r));
 }

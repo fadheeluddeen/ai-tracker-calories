@@ -1,15 +1,36 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, RefreshCw, ChevronDown, Flame } from 'lucide-react';
-import { getChefSuggestions, ChefDish } from '../api';
-import { hapticMedium, hapticSuccess, hapticWarning } from '../utils/haptics';
+import { Sparkles, RefreshCw, ChevronDown, Flame, Check, PlusCircle } from 'lucide-react';
+import { getChefSuggestions, ChefDish, ManualMealInput } from '../api';
+import { hapticMedium, hapticSuccess, hapticWarning, hapticLight } from '../utils/haptics';
 
-export const ChefSuggestView: React.FC = () => {
+interface ChefSuggestViewProps {
+  onLogMeal: (input: ManualMealInput) => Promise<boolean>;
+}
+
+export const ChefSuggestView: React.FC<ChefSuggestViewProps> = ({ onLogMeal }) => {
   const [dishes, setDishes] = useState<ChefDish[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [loggedIdx, setLoggedIdx] = useState<number | null>(null);
+
+  const handleLogDish = async (dish: ChefDish, idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    hapticLight();
+    const ok = await onLogMeal({
+      food_name: dish.name,
+      calories: dish.calories,
+      protein_g: dish.protein_g,
+      carbs_g: dish.carbs_g,
+      fat_g: dish.fat_g,
+    });
+    if (ok) {
+      setLoggedIdx(idx);
+      setTimeout(() => setLoggedIdx(null), 2000);
+    }
+  };
 
   const fetchSuggestions = useCallback(async () => {
     hapticMedium();
@@ -146,6 +167,25 @@ export const ChefSuggestView: React.FC = () => {
                         ))}
                       </ol>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleLogDish(dish, idx, e)}
+                      disabled={loggedIdx === idx}
+                      className="w-full py-2.5 rounded-2xl liquid-droplet-dark text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-70"
+                    >
+                      {loggedIdx === idx ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-300" />
+                          <span>Logged to Diary</span>
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          <span>Log this</span>
+                        </>
+                      )}
+                    </button>
                   </motion.div>
                 )}
               </div>

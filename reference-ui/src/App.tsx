@@ -12,7 +12,16 @@ import { PantryIngredientsView } from './components/PantryIngredientsView';
 import { ChefSuggestView } from './components/ChefSuggestView';
 import { SupplementsView } from './components/SupplementsView';
 import { CameraCaptureModal } from './components/CameraCaptureModal';
-import { getMealsToday, getMealsByDate, postMealPhoto, DayMeals, isNotFoodResult, getProfile } from './api';
+import {
+  getMealsToday,
+  getMealsByDate,
+  postMealPhoto,
+  logMealManual,
+  ManualMealInput,
+  DayMeals,
+  isNotFoodResult,
+  getProfile,
+} from './api';
 import { hapticSuccess, hapticMedium, hapticWarning } from './utils/haptics';
 
 const today = getTodayDateString();
@@ -85,6 +94,7 @@ export default function App() {
   const [isUploadingMeal, setIsUploadingMeal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [notFoodMessage, setNotFoodMessage] = useState<string | null>(null);
+  const [logConfirmMessage, setLogConfirmMessage] = useState<string | null>(null);
 
   // Real goals, calculated server-side (Mifflin-St Jeor) from profile + latest
   // weigh-in. Falls back to DEFAULT_GOALS until a profile/weight exist yet.
@@ -162,6 +172,27 @@ export default function App() {
     }
   };
 
+  // Shared by AI Chef ("Log this" on a suggestion) and Pantry ("Log this" on
+  // an ingredient) — logs a meal with known nutrition and no photo.
+  const handleLogMealManual = async (input: ManualMealInput) => {
+    try {
+      await logMealManual(input);
+      hapticSuccess();
+      setLogConfirmMessage(`Logged "${input.food_name}" to today's diary`);
+      setTimeout(() => setLogConfirmMessage(null), 2500);
+      if (selectedDate !== today) {
+        setSelectedDate(today);
+      } else {
+        await loadMealsForDate(today);
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to log meal manually:', err);
+      hapticWarning();
+      return false;
+    }
+  };
+
   return (
     <div
       className={`min-h-dvh w-full max-w-md mx-auto relative flex flex-col overflow-hidden ${getThemeBackgroundClass(theme)} text-neutral-900 transition-colors duration-500`}
@@ -199,11 +230,13 @@ export default function App() {
           </>
         )}
 
-        {activeTab === 'pantry' && <PantryIngredientsView onAskChef={() => setActiveTab('chef')} />}
+        {activeTab === 'pantry' && (
+          <PantryIngredientsView onAskChef={() => setActiveTab('chef')} onLogMeal={handleLogMealManual} />
+        )}
 
         {activeTab === 'supplements' && <SupplementsView />}
 
-        {activeTab === 'chef' && <ChefSuggestView />}
+        {activeTab === 'chef' && <ChefSuggestView onLogMeal={handleLogMealManual} />}
 
         {activeTab === 'trends' && <TrendsView goals={goals} />}
 
@@ -238,6 +271,17 @@ export default function App() {
         >
           <div className="liquid-glass-thick rounded-2xl px-4 py-3 text-sm font-semibold text-neutral-900 border border-white/80 shadow-xl text-center max-w-xs">
             {notFoodMessage}
+          </div>
+        </div>
+      )}
+
+      {logConfirmMessage && (
+        <div
+          className="absolute inset-x-4 z-50 flex justify-center"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}
+        >
+          <div className="liquid-glass-thick rounded-2xl px-4 py-3 text-sm font-semibold text-emerald-800 border border-white/80 shadow-xl text-center max-w-xs">
+            {logConfirmMessage}
           </div>
         </div>
       )}
