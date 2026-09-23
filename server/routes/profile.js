@@ -8,6 +8,7 @@ const {
   getProfile,
   upsertProfile,
   setBackgroundImage,
+  setCustomCalorieGoal,
   getLatestWeight,
   calculateGoals,
 } = require('../services/profile');
@@ -65,6 +66,26 @@ router.put('/', async (req, res) => {
   } catch (err) {
     console.error('[profile] update failed:', err.message);
     res.status(500).json({ error: 'failed to update profile' });
+  }
+});
+
+// Fixed daily calorie goal that overrides the calculated one. Send
+// { calorie_goal: null } to go back to the calculated goal.
+router.put('/calorie-goal', async (req, res) => {
+  const { calorie_goal } = req.body;
+  if (calorie_goal !== null && (!Number.isInteger(calorie_goal) || calorie_goal < 800 || calorie_goal > 6000)) {
+    return res.status(400).json({ error: 'calorie_goal must be a whole number between 800 and 6000, or null' });
+  }
+
+  try {
+    const profile = await setCustomCalorieGoal(calorie_goal);
+    if (!profile) {
+      return res.status(400).json({ error: 'Set up your profile before choosing a calorie goal.' });
+    }
+    res.json(profile);
+  } catch (err) {
+    console.error('[profile] calorie goal update failed:', err.message);
+    res.status(500).json({ error: 'failed to update calorie goal' });
   }
 });
 

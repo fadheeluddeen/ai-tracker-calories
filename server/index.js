@@ -32,9 +32,20 @@ app.use('/api/weight', weightRouter);
 
 // Real frontend (built via `npm run build:client`). Single-page app, so any
 // non-API, non-static route falls through to index.html.
-app.use(express.static(CLIENT_DIST));
+// index.html must never be cached — it's the only file that points at the
+// current build, and a stale copy (iOS home-screen apps hold on to it)
+// keeps loading the old JS forever. Hashed assets can cache indefinitely.
+const setClientCacheHeaders = (res, filePath) => {
+  if (filePath.endsWith('index.html')) {
+    res.setHeader('Cache-Control', 'no-store');
+  } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+};
+app.use(express.static(CLIENT_DIST, { setHeaders: setClientCacheHeaders }));
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
+  res.setHeader('Cache-Control', 'no-store');
   res.sendFile(path.join(CLIENT_DIST, 'index.html'), (err) => {
     if (err) next(err);
   });

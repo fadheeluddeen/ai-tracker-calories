@@ -56,6 +56,18 @@ async function setBackgroundImage(imagePath) {
   return rows[0];
 }
 
+// null clears the override and goes back to the calculated goal.
+async function setCustomCalorieGoal(calories) {
+  const existing = await getProfile();
+  if (!existing) return null;
+
+  const { rows } = await pool.query(
+    'UPDATE profile SET custom_calorie_goal = $1, updated_at = now() WHERE id = $2 RETURNING *',
+    [calories, existing.id]
+  );
+  return rows[0];
+}
+
 async function getLatestWeight() {
   const { rows } = await pool.query('SELECT * FROM weight_logs ORDER BY logged_at DESC LIMIT 1');
   return rows[0] || null;
@@ -75,6 +87,8 @@ async function logWeight(weightKg) {
  * weigh-in or profile edit changes the answer on the very next read.
  * Protein is a fixed body-composition target (1.8g/kg bodyweight), fat is
  * 25% of the calorie goal, and carbs absorb whatever calories are left.
+ * A custom_calorie_goal on the profile replaces the calculated goal (macros
+ * are then split from the custom number); BMR/TDEE are still reported.
  */
 function calculateGoals(profile, weightKg) {
   const heightCm = Number(profile.height_cm);
@@ -82,7 +96,10 @@ function calculateGoals(profile, weightKg) {
   const bmr = profile.sex === 'male' ? base + 5 : base - 161;
 
   const tdee = bmr * ACTIVITY_MULTIPLIERS[profile.activity_level];
-  const calorieGoal = tdee + GOAL_ADJUSTMENTS[profile.goal];
+  const isCustom = profile.custom_calorie_goal != null;
+  const calorieGoal = isCustom
+    ? Number(profile.custom_calorie_goal)
+    : tdee + GOAL_ADJUSTMENTS[profile.goal];
 
   const proteinG = 1.8 * weightKg;
   const fatG = (calorieGoal * 0.25) / 9;
@@ -92,6 +109,7 @@ function calculateGoals(profile, weightKg) {
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),
     calorie_goal: Math.round(calorieGoal),
+    is_custom: isCustom,
     protein_g: Math.round(proteinG),
     fat_g: Math.round(fatG),
     carbs_g: Math.round(carbsG),
@@ -104,6 +122,7 @@ module.exports = {
   getProfile,
   upsertProfile,
   setBackgroundImage,
+  setCustomCalorieGoal,
   getLatestWeight,
   logWeight,
   calculateGoals,

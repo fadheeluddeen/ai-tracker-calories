@@ -7,6 +7,7 @@ import {
   getProfile,
   updateProfile,
   logWeight,
+  setCalorieGoal,
   uploadBackgroundImage,
   resetBackgroundImage,
   getPushPublicKey,
@@ -19,6 +20,7 @@ import {
   WeightGoal,
 } from '../api';
 import { hapticLight, hapticSuccess, hapticWarning } from '../utils/haptics';
+import { BUILD_ID } from '../utils/autoUpdate';
 
 // Converts the VAPID public key (base64url, from the server) into the raw
 // byte array the PushManager subscribe() call requires.
@@ -70,6 +72,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
   const [savingWeight, setSavingWeight] = useState(false);
   const [weightSaved, setWeightSaved] = useState(false);
   const [weightError, setWeightError] = useState<string | null>(null);
+
+  // Custom calorie goal (overrides the calculated one)
+  const [goalInput, setGoalInput] = useState('');
+  const [goalBusy, setGoalBusy] = useState(false);
+  const [goalError, setGoalError] = useState<string | null>(null);
 
   // Custom background photo
   const [backgroundPath, setBackgroundPath] = useState<string | null>(null);
@@ -158,12 +165,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
     }
   };
 
+  const handleSetCalorieGoal = async (value: number | null) => {
+    setGoalError(null);
+    if (value !== null && (!Number.isInteger(value) || value < 800 || value > 6000)) {
+      setGoalError('Enter a whole number between 800 and 6000.');
+      return;
+    }
+    setGoalBusy(true);
+    try {
+      await setCalorieGoal(value);
+      hapticSuccess();
+      await loadProfile();
+      onProfileSaved();
+    } catch (err: any) {
+      hapticWarning();
+      setGoalError(err.message || 'Failed to update calorie goal');
+    } finally {
+      setGoalBusy(false);
+    }
+  };
+
   const loadProfile = async () => {
     try {
       setLoading(true);
       const data = await getProfile();
       setLatestWeightKg(data.latest_weight?.weight_kg ?? null);
       setCalculated(data.goals);
+      setGoalInput(data.goals ? String(data.goals.calorie_goal) : '');
       if (data.profile) {
         setSex(data.profile.sex);
         setAge(String(data.profile.age));
@@ -476,7 +504,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
         )}
       </form>
 
-      {/* Calculated goals — read-only, derived server-side, never manually editable */}
+      {/* Daily targets — calculated server-side, with an optional fixed calorie goal override */}
       <div className="liquid-glass liquid-sheen rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden space-y-3">
         <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none z-10" />
 
@@ -516,9 +544,55 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
             </div>
 
             <div className="liquid-droplet rounded-2xl p-3 flex items-center justify-between">
-              <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Calorie Goal</span>
+              <div>
+                <span className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Calorie Goal</span>
+                <div className="text-[10px] font-semibold text-neutral-500">
+                  {calculated.is_custom
+                    ? `Your fixed goal · ${calculated.tdee - calculated.calorie_goal} kcal under maintenance`
+                    : 'Calculated from your profile'}
+                </div>
+              </div>
               <span className="text-lg font-black text-neutral-900">{calculated.calorie_goal} kcal</span>
             </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSetCalorieGoal(Number(goalInput));
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="number"
+                inputMode="numeric"
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+                placeholder="e.g. 1800"
+                className="flex-1 min-w-0 px-3 py-2.5 rounded-xl liquid-glass text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none"
+                aria-label="Custom daily calorie goal"
+              />
+              <button
+                type="submit"
+                disabled={goalBusy}
+                className="px-4 py-2.5 rounded-xl liquid-droplet-dark text-white font-bold text-xs disabled:opacity-60"
+              >
+                {goalBusy ? 'Saving...' : 'Set Goal'}
+              </button>
+            </form>
+            {calculated.is_custom && (
+              <button
+                type="button"
+                onClick={() => handleSetCalorieGoal(null)}
+                disabled={goalBusy}
+                className="w-full py-2 rounded-xl liquid-glass text-neutral-800 font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Use calculated goal instead</span>
+              </button>
+            )}
+            {goalError && (
+              <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-2.5">{goalError}</div>
+            )}
 
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
@@ -734,6 +808,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onProfileSaved }) => {
           </div>
         )}
       </div>
+
+      <p className="text-center text-[10px] font-semibold text-neutral-600">Version {BUILD_ID}</p>
     </div>
   );
 };

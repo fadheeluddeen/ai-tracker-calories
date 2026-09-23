@@ -237,9 +237,19 @@ export interface CalculatedGoals {
   bmr: number;
   tdee: number;
   calorie_goal: number;
+  is_custom: boolean;
   protein_g: number;
   fat_g: number;
   carbs_g: number;
+}
+
+// null clears the custom goal and goes back to the calculated one.
+export function setCalorieGoal(calorieGoal: number | null): Promise<unknown> {
+  return fetch('/api/profile/calorie-goal', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ calorie_goal: calorieGoal }),
+  }).then((r) => handle(r));
 }
 
 export interface ProfileResponse {
