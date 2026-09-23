@@ -5,7 +5,6 @@ export const DEFAULT_GOALS: UserGoals = {
   protein: 145,
   carbs: 230,
   fat: 65,
-  waterGoalMl: 2800,
 };
 
 export function getTodayDateString(): string {

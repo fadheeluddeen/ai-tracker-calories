@@ -21,6 +21,22 @@ router.post('/', upload.single('photo'), async (req, res) => {
     return res.status(500).json({ error: 'failed to process photo' });
   }
 
+  const analysis = await analyzeFood(compressed);
+
+  // Confirmed non-food (e.g. a plant, a person) — don't save the photo or
+  // create a meal row at all, so the diary doesn't get a 0-calorie entry.
+  // Genuine analysis failures still fall through and get logged below,
+  // flagged with analysis_failed, so the photo isn't silently lost.
+  if (analysis.is_food === false) {
+    return res.status(200).json({
+      not_food: true,
+      food_name: analysis.food_name,
+      message: `That doesn't look like food${
+        analysis.food_name ? ` — looks like ${analysis.food_name.toLowerCase()}` : ''
+      }. Try retaking the photo.`,
+    });
+  }
+
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}.jpg`;
 
   let photoDiskPath;
@@ -33,8 +49,6 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
   // Best-effort backup — never fails the request.
   const photoDriveId = await uploadToDrive(compressed, filename);
-
-  const analysis = await analyzeFood(compressed);
 
   try {
     const { rows } = await pool.query(

@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
-import { Flame, Sparkles, Code } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { UserGoals } from '../types';
-import { hapticLight, hapticMedium } from '../utils/haptics';
-import { LiquidGlassSvgModal } from './LiquidGlassSvgModal';
 
 interface MacroRingsProps {
   totalCalories: number;
@@ -11,7 +9,6 @@ interface MacroRingsProps {
   totalCarbs: number;
   totalFat: number;
   goals: UserGoals;
-  burnedCalories: number;
 }
 
 export const MacroRings: React.FC<MacroRingsProps> = ({
@@ -20,10 +17,8 @@ export const MacroRings: React.FC<MacroRingsProps> = ({
   totalCarbs,
   totalFat,
   goals,
-  burnedCalories,
 }) => {
-  const [showSvgModal, setShowSvgModal] = useState(false);
-  const remainingCalories = Math.max(0, goals.calories - totalCalories + burnedCalories);
+  const remainingCalories = Math.max(0, goals.calories - totalCalories);
   const netCalories = totalCalories;
 
   // Percentage calculations
@@ -71,23 +66,9 @@ export const MacroRings: React.FC<MacroRingsProps> = ({
             Daily Summary
           </h2>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              hapticLight();
-              setShowSvgModal(true);
-            }}
-            className="liquid-glass-subtle hover:bg-white/80 border border-white/60 px-2.5 py-1.5 rounded-full text-[11px] font-bold text-neutral-700 flex items-center gap-1 active:scale-95 transition-all shadow-xs"
-            title="Inspect & download liquid glass SVG asset"
-          >
-            <Code className="w-3 h-3 text-neutral-600" />
-            <span>SVG</span>
-          </button>
-          <div className="liquid-droplet px-3 py-1.5 rounded-full text-xs font-semibold text-neutral-800 flex items-center gap-1.5 shadow-sm">
-            <Flame className="w-3.5 h-3.5 text-neutral-800" />
-            <span>Goal: {goals.calories}</span>
-          </div>
+        <div className="liquid-droplet px-3 py-1.5 rounded-full text-xs font-semibold text-neutral-800 flex items-center gap-1.5 shadow-sm">
+          <Flame className="w-3.5 h-3.5 text-neutral-800" />
+          <span>Goal: {goals.calories}</span>
         </div>
       </div>
 
@@ -243,24 +224,14 @@ export const MacroRings: React.FC<MacroRingsProps> = ({
 
         {/* Quick Numbers & Macro Bars */}
         <div className="flex-1 w-full flex flex-col gap-3.5">
-          {/* Intake vs Burned row with liquid droplet look */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="liquid-glass-subtle rounded-2xl p-2.5 flex flex-col border border-white/60">
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                Eaten
-              </span>
-              <span className="text-base font-extrabold text-neutral-900 mt-0.5">
-                {totalCalories} <span className="text-[10px] font-medium text-neutral-500">kcal</span>
-              </span>
-            </div>
-            <div className="liquid-glass-subtle rounded-2xl p-2.5 flex flex-col border border-white/60">
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                Active Burn
-              </span>
-              <span className="text-base font-extrabold text-neutral-900 mt-0.5">
-                {burnedCalories} <span className="text-[10px] font-medium text-neutral-500">kcal</span>
-              </span>
-            </div>
+          {/* Eaten so far today */}
+          <div className="liquid-glass-subtle rounded-2xl p-2.5 flex flex-col border border-white/60">
+            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+              Eaten
+            </span>
+            <span className="text-base font-extrabold text-neutral-900 mt-0.5">
+              {totalCalories} <span className="text-[10px] font-medium text-neutral-500">kcal</span>
+            </span>
           </div>
 
           {/* Macro Progress Bars - Crisp liquid glass bars */}
@@ -330,12 +301,6 @@ export const MacroRings: React.FC<MacroRingsProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Interactive Liquid Glass SVG Asset Inspector & Downloader */}
-      <LiquidGlassSvgModal
-        isOpen={showSvgModal}
-        onClose={() => setShowSvgModal(false)}
-      />
     </div>
   );
 };

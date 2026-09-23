@@ -103,7 +103,17 @@ export function getMealsHistory(days: number): Promise<{ history: HistoryDay[] }
   return fetch(`/api/meals/history?days=${days}`).then((r) => handle(r));
 }
 
-export function postMealPhoto(imageDataUrl: string): Promise<Meal> {
+export interface NotFoodResult {
+  not_food: true;
+  food_name: string | null;
+  message: string;
+}
+
+export function isNotFoodResult(result: Meal | NotFoodResult): result is NotFoodResult {
+  return (result as NotFoodResult).not_food === true;
+}
+
+export function postMealPhoto(imageDataUrl: string): Promise<Meal | NotFoodResult> {
   const form = new FormData();
   form.append('photo', dataUrlToBlob(imageDataUrl), 'meal.jpg');
   return fetch('/api/meals', { method: 'POST', body: form }).then((r) => handle(r));

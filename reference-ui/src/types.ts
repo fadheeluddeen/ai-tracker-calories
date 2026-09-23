@@ -3,12 +3,6 @@ export interface UserGoals {
   protein: number;
   carbs: number;
   fat: number;
-  waterGoalMl: number;
-}
-
-export interface DayLocal {
-  waterMl: number;
-  burnedCalories: number;
 }
 
 export type GlassTheme = 'titanium' | 'frost' | 'aurora' | 'graphite';

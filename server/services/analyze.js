@@ -36,6 +36,7 @@ async function analyzeFood(buffer) {
   await recordGeminiError(lastErr);
 
   return {
+    is_food: true,
     food_name: null,
     calories: null,
     protein_g: null,

@@ -1,27 +1,24 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Flame, Droplets, Dumbbell, ChevronUp } from 'lucide-react';
+import { Flame, Utensils, ChevronUp } from 'lucide-react';
 import { hapticLight } from '../utils/haptics';
 
 interface DynamicIslandProps {
   remainingCalories: number;
   totalCalories: number;
   goalCalories: number;
-  waterMl: number;
-  waterGoalMl: number;
+  mealsCount: number;
 }
 
 export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   remainingCalories,
   totalCalories,
   goalCalories,
-  waterMl,
-  waterGoalMl,
+  mealsCount,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const percentUsed = Math.min(100, Math.round((totalCalories / goalCalories) * 100));
-  const waterPercent = Math.min(100, Math.round((waterMl / waterGoalMl) * 100));
 
   const handleToggle = () => {
     hapticLight();
@@ -93,12 +90,12 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
               <div className="grid grid-cols-2 gap-2 text-[10px]">
                 <div className="flex items-center gap-1.5 bg-white/5 rounded-xl px-2 py-1 border border-white/5">
-                  <Droplets className="w-3 h-3 text-sky-300" />
-                  <span className="text-neutral-300">Hydration:</span>
-                  <span className="font-medium text-white">{waterPercent}%</span>
+                  <Utensils className="w-3 h-3 text-neutral-300" />
+                  <span className="text-neutral-300">Meals:</span>
+                  <span className="font-medium text-white">{mealsCount}</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-white/5 rounded-xl px-2 py-1 border border-white/5">
-                  <Dumbbell className="w-3 h-3 text-neutral-300" />
+                  <Flame className="w-3 h-3 text-neutral-300" />
                   <span className="text-neutral-300">Logged:</span>
                   <span className="font-medium text-white">{totalCalories} kcal</span>
                 </div>
